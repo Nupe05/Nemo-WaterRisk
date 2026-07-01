@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests (approval gate, path jail, scoring)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: nemo
+          POSTGRES_PASSWORD: nemo
+          POSTGRES_DB: nemo_waterrisk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nemo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgis://nemo:nemo@localhost:5432/nemo_waterrisk
+      DJANGO_SECRET_KEY: ci-not-a-real-secret
+      DJANGO_DEBUG: "false"
+      NEMO_LLM_MODEL: claude-sonnet-5
+      ANTHROPIC_API_KEY: ci-placeholder-not-used
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system libraries (GDAL/GEOS/PROJ for PostGIS, Pango/Cairo for WeasyPrint)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils gdal-bin libgdal-dev libgeos-dev libproj-dev \
+            libpango-1.0-0 libpangocairo-1.0-0 libcairo2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate model migrations
+        run: python manage.py makemigrations core
+
+      - name: Run test suite
+        run: pytest -q
