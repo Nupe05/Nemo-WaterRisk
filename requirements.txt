@@ -1,0 +1,34 @@
+# --- Core web / app framework ---
+Django==5.0.6                 # includes django.contrib.gis (PostGIS support)
+psycopg[binary]==3.1.19       # PostgreSQL driver
+
+# --- Async task orchestration ---
+celery==5.4.0
+redis==5.0.4                  # Celery broker / result backend
+
+# --- Geospatial analysis layer ---
+geopandas==0.14.4
+shapely==2.0.4
+pyproj==3.6.1
+
+# --- Data ingest ---
+requests==2.32.3
+pandas==2.2.2
+
+# --- Reporting ---
+weasyprint==62.1             # HTML -> PDF
+jinja2==3.1.4
+
+# --- Data visualization (VisualAgent) ---
+matplotlib==3.9.0
+
+# --- LLM ---
+anthropic==0.30.1
+
+# --- Config / secrets ---
+python-dotenv==1.0.1
+cryptography==42.0.8          # Fernet encryption for mailbox tokens at rest
+
+# --- Dev / test ---
+pytest==8.2.2
+pytest-django==4.8.0
