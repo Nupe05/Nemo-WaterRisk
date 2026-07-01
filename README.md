@@ -1,5 +1,7 @@
 # Nemo Water Risk
 
+[![CI](https://github.com/Nupe05/Nemo-WaterRisk/actions/workflows/ci.yml/badge.svg)](https://github.com/Nupe05/Nemo-WaterRisk/actions/workflows/ci.yml)
+
 An autonomous, human-in-the-loop platform that tracks **water-supply risk for
 data centers** and turns that data into a revenue product (paid risk reports)
 plus a content/marketing engine — all directed by one person from the Django
