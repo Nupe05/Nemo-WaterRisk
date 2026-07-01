@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; }
+  h1 { color: #0b3d5c; font-size: 22px; margin-bottom: 0; }
+  .subtitle { color: #667; font-size: 12px; margin-top: 4px; }
+  .score { font-size: 48px; font-weight: 700; color: {{ score_color }}; }
+  .band { font-size: 14px; color: #444; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e2e2e2; font-size: 12px; }
+  th { background: #f4f7f9; color: #0b3d5c; }
+  .note { font-size: 10px; color: #888; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <h1>Water Risk Report — {{ site_name }}</h1>
+  <div class="subtitle">Watershed: {{ watershed_name }} · Reference: {{ site_ref }} · As of {{ as_of }}</div>
+
+  <p class="score">{{ score }}</p>
+  <p class="band">Risk band: <strong>{{ band }}</strong> (0 = low, 100 = severe)</p>
+
+  <table>
+    <thead><tr><th>Component</th><th>Sub-score</th><th>Weight</th></tr></thead>
+    <tbody>
+    {% for row in components %}
+      <tr><td>{{ row.label }}</td><td>{{ row.value }}</td><td>{{ row.weight }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top:20px; font-size:12px;">{{ narrative }}</p>
+
+  <p class="note">
+    Methodology: composite of USGS streamflow deficit, NOAA precipitation
+    deficit, and EPA withdrawal pressure. This report is generated from
+    public hydrological data and is provided for risk-planning purposes.
+  </p>
+</body>
+</html>
