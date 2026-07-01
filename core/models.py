@@ -27,6 +27,9 @@ class Watershed(models.Model):
     huc_code = models.CharField(max_length=16, unique=True, db_index=True)
     name = models.CharField(max_length=255)
     geometry = gis.MultiPolygonField(srid=4326, null=True, blank=True)
+    # Representative USGS gauge site number used for streamflow + baseline.
+    # If blank, the pipeline falls back to a broad HUC query.
+    usgs_site_no = models.CharField(max_length=15, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -11,8 +11,8 @@ from . import models
 
 @admin.register(models.Watershed)
 class WatershedAdmin(admin.ModelAdmin):
-    list_display = ("huc_code", "name", "created_at")
-    search_fields = ("huc_code", "name")
+    list_display = ("huc_code", "name", "usgs_site_no", "created_at")
+    search_fields = ("huc_code", "name", "usgs_site_no")
 
 
 @admin.register(models.MonitoredSite)

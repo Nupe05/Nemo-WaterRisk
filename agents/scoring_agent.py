@@ -61,11 +61,18 @@ class ScoringAgent(BaseAgent):
 
         flow = records.filter(metric="streamflow_cfs").aggregate(v=Avg("value"))["v"]
         precip = records.filter(metric="precip_mm").aggregate(v=Avg("value"))["v"]
+        # Real baseline: USGS historical daily median for this day-of-year,
+        # ingested by the pipeline. Falls back to a constant only if absent.
+        median = records.filter(metric="streamflow_median_cfs").aggregate(v=Avg("value"))["v"]
 
         notes = []
-        # Baselines are placeholders — replace with per-watershed percentiles.
-        flow_baseline = 100.0
-        precip_baseline = 40.0
+        precip_baseline = 40.0  # TODO: replace with NOAA normals per station
+
+        if median and median > 0:
+            flow_baseline = median
+        else:
+            flow_baseline = 100.0
+            notes.append("no USGS baseline available; using fallback flow baseline")
 
         sf = streamflow_deficit(flow, flow_baseline) if flow is not None else 0.0
         if flow is None:

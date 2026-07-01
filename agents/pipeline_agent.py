@@ -34,7 +34,7 @@ class DataPipelineAgent(BaseAgent):
     def _ingest_source(self, source: str, ws: Watershed, errors: list[str]) -> int:
         try:
             if source == "usgs":
-                rows = usgs.fetch_streamflow(ws.huc_code)
+                rows = self._fetch_usgs(ws)
                 src = RawDataRecord.Source.USGS
             elif source == "noaa":
                 # state FIPS + window would come from watershed metadata in prod
@@ -62,3 +62,27 @@ class DataPipelineAgent(BaseAgent):
         ]
         RawDataRecord.objects.bulk_create(objs, batch_size=500)
         return len(objs)
+
+    def _fetch_usgs(self, ws: Watershed) -> list[dict]:
+        """Current flow + today's historical median for the watershed's gauge.
+
+        If the watershed has a specific USGS site number we get a precise gauge
+        reading plus the day-of-year median baseline. Otherwise we fall back to
+        a broad HUC query (flow only, no baseline).
+        """
+        if not ws.usgs_site_no:
+            return usgs.fetch_streamflow(ws.huc_code)
+
+        rows = usgs.fetch_latest_by_sites([ws.usgs_site_no])
+        median = usgs.median_for_date(ws.usgs_site_no)
+        if median is not None:
+            rows.append(
+                {
+                    "metric": "streamflow_median_cfs",
+                    "value": median,
+                    "unit": "ft3/s",
+                    "observed_at": timezone.now(),
+                    "raw": {"site_no": ws.usgs_site_no, "stat": "p50 daily median"},
+                }
+            )
+        return rows

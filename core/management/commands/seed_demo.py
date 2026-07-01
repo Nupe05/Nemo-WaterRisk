@@ -20,9 +20,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         ws, _ = Watershed.objects.get_or_create(
-            huc_code="15060106",
-            defaults={"name": "Salt River (Phoenix)"},
+            huc_code="15060103",
+            defaults={
+                "name": "Salt River (Roosevelt)",
+                # Real, long-running USGS gauge: SALT RIVER NEAR ROOSEVELT, AZ.
+                "usgs_site_no": "09498500",
+            },
         )
+        if not ws.usgs_site_no:
+            ws.usgs_site_no = "09498500"
+            ws.save(update_fields=["usgs_site_no"])
         site, _ = MonitoredSite.objects.get_or_create(
             reference="PHX-DC-001",
             defaults={
@@ -35,9 +42,11 @@ class Command(BaseCommand):
         )
 
         now = timezone.now()
-        # Low streamflow + low precip to produce an elevated score.
+        # Realistic offline sample (mirrors live values seen for this gauge):
+        # current flow well below the historical median -> elevated risk.
         samples = [
-            ("streamflow_cfs", 20.0, "ft3/s", RawDataRecord.Source.USGS),
+            ("streamflow_cfs", 39.0, "ft3/s", RawDataRecord.Source.USGS),
+            ("streamflow_median_cfs", 157.0, "ft3/s", RawDataRecord.Source.USGS),
             ("precip_mm", 5.0, "mm", RawDataRecord.Source.NOAA),
             ("epa_stress_proxy", 1.0, "count", RawDataRecord.Source.EPA),
         ]
