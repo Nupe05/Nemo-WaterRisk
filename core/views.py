@@ -47,8 +47,10 @@ def public_index(request):
         _row(s)
         for s in MonitoredSite.objects.filter(is_public_index=True).select_related("watershed")
     ]
+    # Highest risk first; unscored sites sink to the bottom.
+    rows.sort(key=lambda r: (r["score"] is None, -(r["score"] or 0)))
     scored = [r for r in rows if r["score"] is not None]
-    featured = max(scored, key=lambda r: r["score"]) if scored else None
+    featured = scored[0] if scored else None
     context = {
         "rows": rows,
         "featured": featured,
