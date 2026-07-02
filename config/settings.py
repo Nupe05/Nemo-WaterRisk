@@ -121,7 +121,9 @@ GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH") or None
 # Production security (only when DEBUG is off, i.e. on Heroku).
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+    # Opt-in (default off) so CI / test clients aren't 301-redirected to HTTPS.
+    # Turn on in real production: heroku config:set DJANGO_SECURE_SSL_REDIRECT=true
+    SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", False)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "0"))

@@ -54,9 +54,11 @@ heroku config:set NEMO_TOKEN_KEY="$(python -c 'from cryptography.fernet import F
 heroku config:set ANTHROPIC_API_KEY="sk-ant-..."
 heroku config:set NEMO_LLM_MODEL="claude-sonnet-5"
 heroku config:set DJANGO_CSRF_TRUSTED_ORIGINS="https://nemo-water-risk.herokuapp.com"
+heroku config:set DJANGO_SECURE_SSL_REDIRECT=true
 ```
 
-(Use your actual app URL in the last line.)
+(Use your actual app URL in the CSRF line. `DJANGO_SECURE_SSL_REDIRECT` forces
+HTTPS in production; it's off by default so CI and local tests aren't redirected.)
 
 ## 5. Deploy
 
