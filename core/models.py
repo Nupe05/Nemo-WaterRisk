@@ -208,6 +208,27 @@ class ContentItem(models.Model):
         return f"ContentItem#{self.pk}"
 
 
+class Lead(models.Model):
+    """An inbound signup from the free public Water Risk Index.
+
+    This is the demand signal from the go-to-market plan: if people ask for
+    the full methodology, there is a business. Purely inbound data — no
+    approval gate needed (the agent isn't taking an external action).
+    """
+
+    email = models.EmailField(db_index=True)
+    site_ref = models.CharField(max_length=64, blank=True, default="")
+    source = models.CharField(max_length=64, default="water_risk_index")
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Lead<{self.email}>"
+
+
 class MailboxCredential(models.Model):
     """OAuth mailbox tokens. Stored encrypted at rest (see core.crypto).
 

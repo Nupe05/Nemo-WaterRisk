@@ -1,0 +1,17 @@
+{
+  "name": "Nemo Water Risk",
+  "description": "Autonomous water-supply risk platform for data centers.",
+  "keywords": ["django", "postgis", "water-risk", "agents"],
+  "buildpacks": [
+    { "url": "heroku-community/apt" },
+    { "url": "heroku/python" }
+  ],
+  "addons": ["heroku-postgresql:essential-0"],
+  "env": {
+    "DJANGO_SECRET_KEY": { "generator": "secret" },
+    "DJANGO_DEBUG": { "value": "false" },
+    "NEMO_LLM_MODEL": { "value": "claude-sonnet-5" },
+    "ANTHROPIC_API_KEY": { "required": false },
+    "NEMO_TOKEN_KEY": { "required": false }
+  }
+}

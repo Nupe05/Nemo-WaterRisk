@@ -1,0 +1,48 @@
+{% extends "public/base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>Water Risk Index for Data Centers</h1>
+  <p>Independent, data-driven water-supply risk scores for data-center sites &mdash;
+     built from public USGS streamflow, NOAA precipitation, and EPA withdrawal data.
+     Updated automatically. No spin, just numbers.</p>
+</section>
+
+{% if featured %}
+<div class="featured">
+  <div class="sub">Highest current risk in the index</div>
+  <div class="stat">{{ featured.name }} &mdash; {{ featured.score }}<span style="font-size:18px;opacity:.7">/100</span></div>
+  <div class="sub">{{ featured.watershed }} &middot; {{ featured.band }} risk
+    {% if featured.as_of %}&middot; as of {{ featured.as_of|date:"M j, Y" }}{% endif %}</div>
+</div>
+{% endif %}
+
+<div class="grid">
+  {% for r in rows %}
+  <a class="card" href="/site/{{ r.reference }}/">
+    <div class="name">{{ r.name }}</div>
+    <div class="ws">{{ r.watershed }}</div>
+    <div class="scorebar">
+      <span class="num" style="color:{{ r.color }}">{% if r.score is not None %}{{ r.score }}{% else %}&mdash;{% endif %}</span>
+      <span class="pill" style="background:{{ r.color }}">{{ r.band }}</span>
+    </div>
+  </a>
+  {% empty %}
+  <p>No sites are published in the index yet.</p>
+  {% endfor %}
+</div>
+
+<section class="signup" id="signup">
+  <h2>Get the full methodology</h2>
+  <p>We publish scores here for free. Want the underlying model, the data sources,
+     and a full risk report for a specific site? Leave your email &mdash; we&rsquo;ll send the methodology.</p>
+  {% if subscribed %}
+    <div class="ok">Thanks &mdash; you&rsquo;re on the list. We&rsquo;ll be in touch.</div>
+  {% endif %}
+  <form class="form-row" method="post" action="/subscribe/">
+    {% csrf_token %}
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <button type="submit">Send me the methodology</button>
+  </form>
+</section>
+{% endblock %}

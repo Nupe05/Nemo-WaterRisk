@@ -42,8 +42,9 @@ Fill in at minimum:
 ## 5. Migrate & seed
 
 ```bash
-python manage.py migrate
-python manage.py seed_demo          # demo watershed + site + sample data
+python manage.py makemigrations core   # generate model migrations (first run)
+python manage.py migrate                # applies PostGIS extension + tables
+python manage.py seed_demo              # demo watershed + site + sample data
 python manage.py createsuperuser
 ```
 

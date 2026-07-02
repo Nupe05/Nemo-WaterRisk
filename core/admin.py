@@ -75,6 +75,14 @@ class ContentItemAdmin(admin.ModelAdmin):
     list_display = ("id", "trigger_change", "created_at")
 
 
+@admin.register(models.Lead)
+class LeadAdmin(admin.ModelAdmin):
+    list_display = ("email", "site_ref", "source", "created_at")
+    list_filter = ("source",)
+    search_fields = ("email", "site_ref")
+    date_hierarchy = "created_at"
+
+
 @admin.register(models.MailboxCredential)
 class MailboxCredentialAdmin(admin.ModelAdmin):
     list_display = ("customer_id", "provider", "email_address", "status", "updated_at")

@@ -1,0 +1,8 @@
+binutils
+gdal-bin
+libgdal-dev
+libgeos-dev
+libproj-dev
+libpango-1.0-0
+libpangocairo-1.0-0
+libcairo2

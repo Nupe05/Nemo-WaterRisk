@@ -13,22 +13,14 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from core.models import ApprovalItem, MonitoredSite, WaterRiskScore
+from scoring.bands import band as _band
 from .base import BaseAgent
 
-_BANDS = [(80, "Severe", "#b00020"), (60, "High", "#e2711d"), (40, "Elevated", "#e0a800"),
-          (20, "Moderate", "#2a9d8f"), (0, "Low", "#2a7d2a")]
 _LABELS = {
     "streamflow_deficit": "Streamflow deficit",
     "precip_deficit": "Precipitation deficit",
     "withdrawal_pressure": "Withdrawal pressure",
 }
-
-
-def _band(score: float):
-    for threshold, label, color in _BANDS:
-        if score >= threshold:
-            return label, color
-    return "Low", "#2a7d2a"
 
 
 class ReportAgent(BaseAgent):

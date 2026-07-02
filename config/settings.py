@@ -20,6 +20,13 @@ def _env_bool(name: str, default: bool = False) -> bool:
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = _env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
+# Heroku dynos are reached via *.herokuapp.com (and your custom domain).
+ALLOWED_HOSTS += [".herokuapp.com"]
+
+# CSRF: the public signup form POSTs, so the site's HTTPS origin must be trusted.
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
+] + ["https://*.herokuapp.com"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -34,6 +41,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise serves static files directly from the web dyno (no S3 needed).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -97,13 +106,41 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Geospatial library paths. Left as None (Django auto-detects) locally; on
+# Heroku's apt buildpack you can point these at the installed .so files if
+# auto-detection fails (see docs/DEPLOY_HEROKU.md).
+GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH") or None
+GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH") or None
+
+# Production security (only when DEBUG is off, i.e. on Heroku).
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "0"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+    SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
 
 
 # --- Celery -----------------------------------------------------------------
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+# Heroku Redis exposes REDIS_URL; fall back to it if the explicit vars are unset.
+_redis = os.getenv("REDIS_URL", "redis://localhost:6379")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", f"{_redis}/0" if _redis.count("/") < 4 else _redis)
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_TASK_TRACK_STARTED = True
+# Heroku Redis uses TLS (rediss://) with self-signed certs.
+if CELERY_BROKER_URL.startswith("rediss://"):
+    import ssl
+
+    CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+    CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
 
 
 # --- Nemo agent configuration ----------------------------------------------

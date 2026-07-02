@@ -1,0 +1,46 @@
+{% extends "public/base.html" %}
+
+{% block title %}{{ row.name }} &mdash; Water Risk{% endblock %}
+{% block og_title %}{{ row.name }} &mdash; Water Risk {{ row.score }}/100 ({{ row.band }}){% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>{{ row.name }}</h1>
+  <p>{{ row.watershed }}{% if row.as_of %} &middot; as of {{ row.as_of|date:"M j, Y" }}{% endif %}</p>
+</section>
+
+<div class="featured">
+  <div class="sub">Water-supply risk score</div>
+  <div class="stat">{% if row.score is not None %}{{ row.score }}<span style="font-size:18px;opacity:.7">/100</span>{% else %}Not yet scored{% endif %}</div>
+  <div class="sub"><span class="pill" style="background:{{ row.color }}">{{ row.band }}</span></div>
+</div>
+
+{% if components %}
+<h2 style="color:#0b3d5c;">What drives this score</h2>
+<table>
+  <thead><tr><th>Component</th><th style="width:55%">Level</th><th>Value</th></tr></thead>
+  <tbody>
+  {% for c in components %}
+    <tr>
+      <td>{{ c.label }}</td>
+      <td><div class="barwrap"><div class="bar" style="width:{{ c.value }}%"></div></div></td>
+      <td>{{ c.value }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<a class="back" href="/">&larr; Back to the full index</a>
+
+<section class="signup" id="signup" style="margin-top:28px;">
+  <h2>Want the full report for {{ row.name }}?</h2>
+  <p>Leave your email and we&rsquo;ll send the methodology and a detailed site report.</p>
+  <form class="form-row" method="post" action="/subscribe/">
+    {% csrf_token %}
+    <input type="hidden" name="site_ref" value="{{ row.reference }}">
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <button type="submit">Request the report</button>
+  </form>
+</section>
+{% endblock %}

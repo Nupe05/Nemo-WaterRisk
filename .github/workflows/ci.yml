@@ -11,6 +11,7 @@ jobs:
     name: Tests (approval gate, path jail, scoring)
     runs-on: ubuntu-latest
 
+    # PostGIS database for the DB-backed tests (approval queue).
     services:
       postgres:
         image: postgis/postgis:16-3.4
@@ -30,6 +31,7 @@ jobs:
       DATABASE_URL: postgis://nemo:nemo@localhost:5432/nemo_waterrisk
       DJANGO_SECRET_KEY: ci-not-a-real-secret
       DJANGO_DEBUG: "false"
+      # Model is required at import time; tests never actually call the LLM.
       NEMO_LLM_MODEL: claude-sonnet-5
       ANTHROPIC_API_KEY: ci-placeholder-not-used
 

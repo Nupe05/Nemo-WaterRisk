@@ -5,8 +5,12 @@ from core import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Free public "Water Risk Index" lookup — the lead-magnet from the plan.
-    path("index/", views.water_risk_index, name="water-risk-index"),
-    path("index/<str:site_ref>/", views.water_risk_index_detail, name="water-risk-index-detail"),
+    # Free public "Water Risk Index" — the lead magnet from the plan.
+    path("", views.public_index, name="public-index"),
+    path("site/<str:site_ref>/", views.public_detail, name="public-detail"),
+    path("subscribe/", views.subscribe, name="subscribe"),
+    # JSON API for programmatic access.
+    path("api/sites/", views.api_sites, name="api-sites"),
+    path("api/sites/<str:site_ref>/", views.api_site_detail, name="api-site-detail"),
     path("healthz/", views.healthz, name="healthz"),
 ]
