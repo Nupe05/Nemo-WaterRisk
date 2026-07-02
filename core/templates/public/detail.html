@@ -32,6 +32,9 @@
 {% endif %}
 
 <a class="back" href="/">&larr; Back to the full index</a>
+{% if request.user.is_staff %}
+<a class="back" href="/report/{{ row.reference }}/" style="margin-left:18px;font-weight:600;">Generate risk report &rarr;</a>
+{% endif %}
 
 <section class="signup" id="signup" style="margin-top:28px;">
   <h2>Want the full report for {{ row.name }}?</h2>
