@@ -11,17 +11,17 @@ from django.core.management.base import BaseCommand
 
 from core.models import MonitoredSite, Watershed
 
-# (huc8, watershed_name, usgs_site_no, site_reference, site_name, lon, lat)
+# (huc8, watershed_name, usgs_site_no, county_fips, site_reference, site_name, lon, lat)
 METROS = [
-    ("02070008", "Potomac River (Washington, DC)", "01646500",
+    ("02070008", "Potomac River (Washington, DC)", "01646500", "51107",
      "IAD-DC-001", "Ashburn / Northern Virginia", -77.1276, 38.9498),
-    ("12030105", "Trinity River (Dallas)", "08057000",
+    ("12030105", "Trinity River (Dallas)", "08057000", "48113",
      "DFW-DC-001", "Dallas–Fort Worth", -96.8219, 32.7749),
-    ("15060103", "Salt River (Roosevelt)", "09498500",
+    ("15060103", "Salt River (Roosevelt)", "09498500", "04013",
      "PHX-DC-001", "Phoenix", -110.9221, 33.6192),
-    ("17070105", "Columbia River (The Dalles)", "14105700",
+    ("17070105", "Columbia River (The Dalles)", "14105700", "41065",
      "DLS-DC-001", "The Dalles, Oregon", -121.1899, 45.6083),
-    ("03130001", "Chattahoochee River (Atlanta)", "02336000",
+    ("03130001", "Chattahoochee River (Atlanta)", "02336000", "13121",
      "ATL-DC-001", "Atlanta", -84.4544, 33.8592),
 ]
 
@@ -31,14 +31,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         new_sites = 0
-        for huc, wname, site_no, ref, sname, lon, lat in METROS:
+        for huc, wname, site_no, fips, ref, sname, lon, lat in METROS:
             ws, _ = Watershed.objects.get_or_create(
-                huc_code=huc, defaults={"name": wname, "usgs_site_no": site_no}
+                huc_code=huc,
+                defaults={"name": wname, "usgs_site_no": site_no, "county_fips": fips},
             )
-            # Make sure the gauge is set even if the watershed already existed.
-            if ws.usgs_site_no != site_no:
+            # Make sure the gauge + county are set even if the watershed existed.
+            if ws.usgs_site_no != site_no or ws.county_fips != fips:
                 ws.usgs_site_no = site_no
-                ws.save(update_fields=["usgs_site_no"])
+                ws.county_fips = fips
+                ws.save(update_fields=["usgs_site_no", "county_fips"])
 
             site, created = MonitoredSite.objects.get_or_create(
                 reference=ref,

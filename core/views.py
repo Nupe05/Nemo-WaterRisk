@@ -18,7 +18,7 @@ from .models import Lead, MonitoredSite, WaterRiskScore
 
 COMPONENT_LABELS = {
     "streamflow_deficit": "Streamflow deficit",
-    "precip_deficit": "Precipitation deficit",
+    "drought_index": "Drought severity (USDM)",
     "withdrawal_pressure": "Withdrawal pressure",
 }
 
@@ -72,15 +72,10 @@ def public_index(request):
 def public_detail(request, site_ref):
     site = get_object_or_404(MonitoredSite, reference=site_ref, is_public_index=True)
     row = _row(site)
-    labels = {
-        "streamflow_deficit": "Streamflow deficit",
-        "precip_deficit": "Precipitation deficit",
-        "withdrawal_pressure": "Withdrawal pressure",
-    }
     components = [
-        {"label": labels.get(k, k), "value": v}
+        {"label": COMPONENT_LABELS.get(k, k), "value": v}
         for k, v in (row["components"] or {}).items()
-        if k in labels
+        if k in COMPONENT_LABELS
     ]
     return render(request, "public/detail.html", {"row": row, "components": components})
 
@@ -114,11 +109,14 @@ def _report_narrative(row: dict) -> str:
     if sf:
         lines.append(
             f"Current streamflow in the {ws} is running roughly {sf:.0f}% below its historical "
-            f"median for this time of year, the primary driver of the score."
+            f"median for this time of year, a primary driver of the score."
         )
-    pd = comps.get("precip_deficit")
-    if pd:
-        lines.append(f"Recent precipitation is about {pd:.0f}% below normal for the watershed.")
+    di = comps.get("drought_index")
+    if di:
+        lines.append(
+            f"The U.S. Drought Monitor shows elevated drought conditions across the metro "
+            f"(severity index {di:.0f} of 100)."
+        )
     lines.append(
         "This assessment reflects the most recent public data and should be revisited as "
         "conditions change."
@@ -192,6 +190,6 @@ def api_site_detail(request, site_ref):
             "band": r["band"],
             "components": r["components"],
             "as_of": r["as_of"].isoformat() if r["as_of"] else None,
-            "methodology": "USGS streamflow deficit + NOAA precip deficit + EPA withdrawal pressure.",
+            "methodology": "USGS streamflow deficit + U.S. Drought Monitor severity + EPA withdrawal pressure.",
         }
     )

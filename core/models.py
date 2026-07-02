@@ -30,6 +30,8 @@ class Watershed(models.Model):
     # Representative USGS gauge site number used for streamflow + baseline.
     # If blank, the pipeline falls back to a broad HUC query.
     usgs_site_no = models.CharField(max_length=15, blank=True, default="")
+    # County FIPS for the associated metro, used for U.S. Drought Monitor data.
+    county_fips = models.CharField(max_length=5, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -62,6 +64,7 @@ class RawDataRecord(models.Model):
         USGS = "usgs", "USGS"
         NOAA = "noaa", "NOAA"
         EPA = "epa", "EPA"
+        USDM = "usdm", "U.S. Drought Monitor"
 
     source = models.CharField(max_length=8, choices=Source.choices, db_index=True)
     watershed = models.ForeignKey(

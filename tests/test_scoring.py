@@ -9,7 +9,7 @@ def test_zero_stress_scores_zero():
 
 def test_max_stress_scores_100():
     result = compute_score(
-        ScoreInputs(streamflow_deficit=1.0, precip_deficit=1.0, withdrawal_pressure=1.0)
+        ScoreInputs(streamflow_deficit=1.0, drought_index=1.0, withdrawal_pressure=1.0)
     )
     assert result["score"] == 100.0
 

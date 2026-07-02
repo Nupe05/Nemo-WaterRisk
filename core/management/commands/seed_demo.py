@@ -25,11 +25,13 @@ class Command(BaseCommand):
                 "name": "Salt River (Roosevelt)",
                 # Real, long-running USGS gauge: SALT RIVER NEAR ROOSEVELT, AZ.
                 "usgs_site_no": "09498500",
+                "county_fips": "04013",  # Maricopa County, AZ (Phoenix metro)
             },
         )
-        if not ws.usgs_site_no:
+        if not ws.usgs_site_no or not ws.county_fips:
             ws.usgs_site_no = "09498500"
-            ws.save(update_fields=["usgs_site_no"])
+            ws.county_fips = "04013"
+            ws.save(update_fields=["usgs_site_no", "county_fips"])
         site, _ = MonitoredSite.objects.get_or_create(
             reference="PHX-DC-001",
             defaults={
@@ -47,7 +49,7 @@ class Command(BaseCommand):
         samples = [
             ("streamflow_cfs", 39.0, "ft3/s", RawDataRecord.Source.USGS),
             ("streamflow_median_cfs", 157.0, "ft3/s", RawDataRecord.Source.USGS),
-            ("precip_mm", 5.0, "mm", RawDataRecord.Source.NOAA),
+            ("drought_index", 0.6, "dsci_frac", RawDataRecord.Source.USDM),
             ("epa_stress_proxy", 1.0, "count", RawDataRecord.Source.EPA),
         ]
         created = 0

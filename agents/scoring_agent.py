@@ -60,13 +60,13 @@ class ScoringAgent(BaseAgent):
         records = RawDataRecord.objects.filter(watershed=ws, observed_at__gte=since)
 
         flow = records.filter(metric="streamflow_cfs").aggregate(v=Avg("value"))["v"]
-        precip = records.filter(metric="precip_mm").aggregate(v=Avg("value"))["v"]
         # Real baseline: USGS historical daily median for this day-of-year,
         # ingested by the pipeline. Falls back to a constant only if absent.
         median = records.filter(metric="streamflow_median_cfs").aggregate(v=Avg("value"))["v"]
+        # Drought stress: normalized U.S. Drought Monitor DSCI (already 0-1).
+        drought = records.filter(metric="drought_index").aggregate(v=Avg("value"))["v"]
 
         notes = []
-        precip_baseline = 40.0  # TODO: replace with NOAA normals per station
 
         if median and median > 0:
             flow_baseline = median
@@ -78,11 +78,11 @@ class ScoringAgent(BaseAgent):
         if flow is None:
             notes.append("no streamflow data in window")
 
-        if precip is not None:
-            pd = max(0.0, min(1.0, 1.0 - (precip / precip_baseline)))
+        if drought is not None:
+            di = max(0.0, min(1.0, drought))
         else:
-            pd = 0.0
-            notes.append("no precip data in window")
+            di = 0.0
+            notes.append("no drought data in window")
 
         # Withdrawal pressure proxy: count of EPA stress rows, saturating.
         stress_count = records.filter(metric="epa_stress_proxy").count()
@@ -90,7 +90,7 @@ class ScoringAgent(BaseAgent):
 
         return ScoreInputs(
             streamflow_deficit=sf,
-            precip_deficit=pd,
+            drought_index=di,
             withdrawal_pressure=wp,
             notes=notes,
         )

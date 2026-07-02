@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 
 # Component weights must sum to 1.0.
 WEIGHTS = {
-    "streamflow_deficit": 0.45,  # low flow vs baseline -> higher risk
-    "precip_deficit": 0.30,      # low precip -> higher risk
+    "streamflow_deficit": 0.45,  # low flow vs historical median -> higher risk
+    "drought_index": 0.30,       # U.S. Drought Monitor severity -> higher risk
     "withdrawal_pressure": 0.25, # high withdrawal/stress -> higher risk
 }
 
@@ -24,7 +24,7 @@ class ScoreInputs:
     """Normalized 0-1 stress indicators (1 = maximum stress)."""
 
     streamflow_deficit: float = 0.0
-    precip_deficit: float = 0.0
+    drought_index: float = 0.0
     withdrawal_pressure: float = 0.0
     notes: list[str] = field(default_factory=list)
 
@@ -37,7 +37,7 @@ def compute_score(inputs: ScoreInputs) -> dict:
     """Return {'score': float 0-100, 'components': {...}}."""
     components = {
         "streamflow_deficit": _clamp01(inputs.streamflow_deficit),
-        "precip_deficit": _clamp01(inputs.precip_deficit),
+        "drought_index": _clamp01(inputs.drought_index),
         "withdrawal_pressure": _clamp01(inputs.withdrawal_pressure),
     }
     weighted = sum(components[k] * WEIGHTS[k] for k in WEIGHTS)

@@ -9,7 +9,7 @@ from __future__ import annotations
 from django.utils import timezone
 
 from core.models import RawDataRecord, Watershed
-from integrations import epa, noaa, usgs
+from integrations import drought, epa, usgs
 from .base import BaseAgent
 
 
@@ -25,7 +25,7 @@ class DataPipelineAgent(BaseAgent):
 
         for ws in watersheds:
             ingested += self._ingest_source("usgs", ws, errors)
-            ingested += self._ingest_source("noaa", ws, errors)
+            ingested += self._ingest_source("drought", ws, errors)
             ingested += self._ingest_source("epa", ws, errors)
 
         self.log("pipeline_finished", ingested=ingested, errors=len(errors))
@@ -36,10 +36,9 @@ class DataPipelineAgent(BaseAgent):
             if source == "usgs":
                 rows = self._fetch_usgs(ws)
                 src = RawDataRecord.Source.USGS
-            elif source == "noaa":
-                # state FIPS + window would come from watershed metadata in prod
-                rows = noaa.fetch_drought_index("04", start="2024-01-01", end="2024-01-31")
-                src = RawDataRecord.Source.NOAA
+            elif source == "drought":
+                rows = self._fetch_drought(ws)
+                src = RawDataRecord.Source.USDM
             else:
                 rows = epa.fetch_withdrawal_proxy("AZ")
                 src = RawDataRecord.Source.EPA
@@ -86,3 +85,20 @@ class DataPipelineAgent(BaseAgent):
                 }
             )
         return rows
+
+    def _fetch_drought(self, ws: Watershed) -> list[dict]:
+        """Normalized U.S. Drought Monitor DSCI (0-1) for the metro county."""
+        if not ws.county_fips:
+            return []
+        value = drought.fetch_drought_index(ws.county_fips)
+        if value is None:
+            return []
+        return [
+            {
+                "metric": "drought_index",
+                "value": value,
+                "unit": "dsci_frac",
+                "observed_at": timezone.now(),
+                "raw": {"fips": ws.county_fips, "source": "USDM DSCI/500"},
+            }
+        ]

@@ -18,7 +18,7 @@ from .base import BaseAgent
 
 _LABELS = {
     "streamflow_deficit": "Streamflow deficit",
-    "precip_deficit": "Precipitation deficit",
+    "drought_index": "Drought severity (USDM)",
     "withdrawal_pressure": "Withdrawal pressure",
 }
 
