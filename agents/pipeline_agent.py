@@ -1,4 +1,4 @@
-"""DataPipelineAgent — nightly ingest from USGS / NOAA / EPA into PostGIS.
+"""DataPipelineAgent — nightly ingest from USGS / U.S. Drought Monitor / U.S. Census into PostGIS.
 
 Runs unattended (no approval needed — it only writes to our own DB, takes no
 external action). Each source is isolated so one failing API doesn't abort the
@@ -9,7 +9,7 @@ from __future__ import annotations
 from django.utils import timezone
 
 from core.models import RawDataRecord, Watershed
-from integrations import drought, epa, usgs
+from integrations import demographics, drought, usgs
 from .base import BaseAgent
 
 
@@ -26,7 +26,7 @@ class DataPipelineAgent(BaseAgent):
         for ws in watersheds:
             ingested += self._ingest_source("usgs", ws, errors)
             ingested += self._ingest_source("drought", ws, errors)
-            ingested += self._ingest_source("epa", ws, errors)
+            ingested += self._ingest_source("demographics", ws, errors)
 
         self.log("pipeline_finished", ingested=ingested, errors=len(errors))
         return {"ingested": ingested, "errors": errors, "at": timezone.now().isoformat()}
@@ -39,9 +39,9 @@ class DataPipelineAgent(BaseAgent):
             elif source == "drought":
                 rows = self._fetch_drought(ws)
                 src = RawDataRecord.Source.USDM
-            else:
-                rows = epa.fetch_withdrawal_proxy("AZ")
-                src = RawDataRecord.Source.EPA
+            else:  # demographics
+                rows = self._fetch_demographics(ws)
+                src = RawDataRecord.Source.CENSUS
         except Exception as exc:  # noqa: BLE001 - isolate per-source failures
             errors.append(f"{source}:{ws.huc_code}:{exc}")
             self.log("source_failed", source=source, huc=ws.huc_code, error=str(exc))
@@ -100,5 +100,22 @@ class DataPipelineAgent(BaseAgent):
                 "unit": "dsci_frac",
                 "observed_at": timezone.now(),
                 "raw": {"fips": ws.county_fips, "source": "USDM DSCI/500"},
+            }
+        ]
+
+    def _fetch_demographics(self, ws: Watershed) -> list[dict]:
+        """Metro county population (2020 Census) as a water-demand signal."""
+        if not ws.county_fips:
+            return []
+        pop = demographics.population_for(ws.county_fips)
+        if pop is None:
+            return []
+        return [
+            {
+                "metric": "population",
+                "value": float(pop),
+                "unit": "people",
+                "observed_at": timezone.now(),
+                "raw": {"fips": ws.county_fips, "source": "2020 U.S. Census"},
             }
         ]

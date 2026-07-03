@@ -65,6 +65,7 @@ class RawDataRecord(models.Model):
         NOAA = "noaa", "NOAA"
         EPA = "epa", "EPA"
         USDM = "usdm", "U.S. Drought Monitor"
+        CENSUS = "census", "U.S. Census"
 
     source = models.CharField(max_length=8, choices=Source.choices, db_index=True)
     watershed = models.ForeignKey(

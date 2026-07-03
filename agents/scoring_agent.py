@@ -14,6 +14,7 @@ from django.db.models import Avg
 from django.utils import timezone
 
 from core.models import RawDataRecord, RiskChange, Watershed, WaterRiskScore
+from integrations.demographics import demand_pressure
 from scoring.model import ScoreInputs, compute_score, streamflow_deficit
 from .base import BaseAgent
 
@@ -84,9 +85,12 @@ class ScoringAgent(BaseAgent):
             di = 0.0
             notes.append("no drought data in window")
 
-        # Withdrawal pressure proxy: count of EPA stress rows, saturating.
-        stress_count = records.filter(metric="epa_stress_proxy").count()
-        wp = min(1.0, stress_count / 50.0)
+        # Withdrawal pressure: metro population (2020 Census) as a water-demand
+        # proxy, normalized to 0-1 by the demographics integration.
+        population = records.filter(metric="population").aggregate(v=Avg("value"))["v"]
+        wp = demand_pressure(population)
+        if population is None:
+            notes.append("no population data in window")
 
         return ScoreInputs(
             streamflow_deficit=sf,

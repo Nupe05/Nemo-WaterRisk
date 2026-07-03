@@ -209,6 +209,6 @@ def api_site_detail(request, site_ref):
             "band": r["band"],
             "components": r["components"],
             "as_of": r["as_of"].isoformat() if r["as_of"] else None,
-            "methodology": "USGS streamflow deficit + U.S. Drought Monitor severity + EPA withdrawal pressure.",
+            "methodology": "USGS streamflow deficit + U.S. Drought Monitor severity + population-weighted withdrawal pressure (U.S. Census).",
         }
     )

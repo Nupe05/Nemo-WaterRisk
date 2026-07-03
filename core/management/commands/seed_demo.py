@@ -50,7 +50,7 @@ class Command(BaseCommand):
             ("streamflow_cfs", 39.0, "ft3/s", RawDataRecord.Source.USGS),
             ("streamflow_median_cfs", 157.0, "ft3/s", RawDataRecord.Source.USGS),
             ("drought_index", 0.6, "dsci_frac", RawDataRecord.Source.USDM),
-            ("epa_stress_proxy", 1.0, "count", RawDataRecord.Source.EPA),
+            ("population", 4_420_568.0, "people", RawDataRecord.Source.CENSUS),  # Maricopa 2020
         ]
         created = 0
         for i in range(5):

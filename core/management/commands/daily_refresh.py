@@ -1,6 +1,6 @@
 """Autonomous daily refresh — the entrypoint for Heroku Scheduler.
 
-Runs the full build pipeline (ingest latest USGS/NOAA/EPA data -> rescore ->
+Runs the full build pipeline (ingest latest USGS / Drought Monitor / Census data -> rescore ->
 draft content for any material risk changes) and prints a one-line summary for
 the scheduler logs. Safe to run unattended: it takes no external action itself
 (any content it drafts goes to the approval queue, never posted automatically).
