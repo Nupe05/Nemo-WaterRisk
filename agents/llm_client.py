@@ -31,27 +31,31 @@ def _extract_text(message) -> str:
 
 
 def parse_json_object(text: str) -> dict:
-    """Best-effort parse of a JSON object from model output."""
+    """Best-effort parse of a JSON object from model output.
+
+    Uses strict=False so literal newlines/tabs inside string values (common in
+    multi-line model output like a YouTube outline) don't break parsing.
+    """
     if not text or not text.strip():
         raise LLMError("llm_empty_response")
     trimmed = text.strip()
 
     try:
-        return json.loads(trimmed)
+        return json.loads(trimmed, strict=False)
     except json.JSONDecodeError:
         pass
 
     fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", trimmed, re.IGNORECASE)
     if fenced:
         try:
-            return json.loads(fenced.group(1).strip())
+            return json.loads(fenced.group(1).strip(), strict=False)
         except json.JSONDecodeError:
             pass
 
     first, last = trimmed.find("{"), trimmed.rfind("}")
     if first != -1 and last != -1 and last > first:
         try:
-            return json.loads(trimmed[first : last + 1])
+            return json.loads(trimmed[first : last + 1], strict=False)
         except json.JSONDecodeError:
             pass
 
