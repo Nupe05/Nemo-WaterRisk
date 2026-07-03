@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from scoring.bands import band
 from scoring.model import WEIGHTS
-from .models import Lead, MonitoredSite, WaterRiskScore
+from .models import ApprovalItem, Lead, MonitoredSite, WaterRiskScore
 
 COMPONENT_LABELS = {
     "streamflow_deficit": "Streamflow deficit",
@@ -83,13 +83,32 @@ def public_detail(request, site_ref):
 @require_POST
 def subscribe(request):
     email = (request.POST.get("email") or "").strip()
+    site_ref = (request.POST.get("site_ref") or "").strip()
     if "@" in email and "." in email:
-        Lead.objects.create(
-            email=email,
-            site_ref=(request.POST.get("site_ref") or "").strip(),
-            source="water_risk_index",
-        )
+        lead = Lead.objects.create(email=email, site_ref=site_ref, source="water_risk_index")
+        _queue_report_request(lead, site_ref)
     return redirect("/?subscribed=1#signup")
+
+
+def _queue_report_request(lead: Lead, site_ref: str) -> None:
+    """If the lead asked about a specific metro, queue an approval-gated report send.
+
+    This is the revenue connector: a signup on a metro's page becomes an
+    actionable item in the approval queue. The report is (re)generated and
+    emailed only when you approve it — nothing leaves automatically.
+    """
+    if not site_ref:
+        return
+    site = MonitoredSite.objects.filter(reference=site_ref).first()
+    if not site:
+        return
+    ApprovalItem.objects.create(
+        content_type="customer_report",
+        action_type=ApprovalItem.ActionType.SEND_REPORT,
+        state=ApprovalItem.State.PENDING,
+        summary=f"Send {site.name} water-risk report to {lead.email}",
+        payload={"to": lead.email, "site": site.reference, "lead_id": lead.id},
+    )
 
 
 # --- Premium report (staff-only, the sellable deliverable) ------------------

@@ -61,10 +61,15 @@ def _run_write_file(payload: dict) -> dict:
 
 
 def _run_send_report(payload: dict) -> dict:
-    # Stub: wire to your transactional email provider (SES/Postmark/etc).
-    # Kept side-effect-free until real credentials + provider are configured.
-    logger.info("send_report (stub) to=%s report=%s", payload.get("to"), payload.get("report_path"))
-    return {"ok": True, "stub": True, "detail": "email provider not configured"}
+    # Stub: when an email provider (SES/Postmark/SendGrid) is configured, this
+    # regenerates the site's report and emails it to payload["to"]. Until then
+    # it logs, so an approved report request is a no-op rather than a failure.
+    logger.info("send_report (stub) to=%s site=%s", payload.get("to"), payload.get("site"))
+    return {
+        "ok": True,
+        "stub": True,
+        "detail": "email provider not configured; report would be generated and sent here",
+    }
 
 
 def _run_post_twitter(payload: dict) -> dict:
