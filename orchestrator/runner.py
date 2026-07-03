@@ -32,8 +32,10 @@ def build_pipeline() -> dict:
     drafted = 0
     for change in RiskChange.objects.filter(content_generated=False):
         content_result = ContentAgent().run(risk_change_id=change.pk)
-        VisualAgent().run(content_item_id=content_result["content_item"])
-        drafted += 1
+        content_item = content_result.get("content_item")
+        if content_item:  # skip visual/count when the LLM draft was skipped
+            VisualAgent().run(content_item_id=content_item)
+            drafted += 1
 
     summary = {
         "pipeline": pipeline_result,

@@ -45,6 +45,9 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Drafting content for {site.name} (score {latest.score:.0f}, {label}) ...\n")
         result = ContentAgent().run(news_item=news)
+        if not result.get("content_item"):
+            self.stderr.write(self.style.ERROR("LLM unavailable — no content drafted (nothing queued)."))
+            return
         item = ContentItem.objects.get(pk=result["content_item"])
 
         self.stdout.write(self.style.SUCCESS("=== X / Twitter thread ==="))

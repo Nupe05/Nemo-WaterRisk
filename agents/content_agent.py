@@ -14,9 +14,10 @@ _SYSTEM = (
     "You are a content strategist for a data-intelligence company that tracks "
     "water risk for data centers. Authoritative, data-driven, never sensational. "
     "Always cite specific numbers. Audience: data-center developers and ESG analysts. "
-    "Return ONLY JSON with keys: youtube_outline (string), twitter_thread (array of "
-    "7 strings; first item must be a stat), instagram_caption (string, <=150 words), "
-    "visual_brief (string describing a chart or map to generate)."
+    "Return ONLY JSON with keys: youtube_outline (string, <=180 words), twitter_thread "
+    "(array of exactly 7 short strings; first item must be a stat), instagram_caption "
+    "(string, <=150 words), visual_brief (string, <=40 words describing a chart or map). "
+    "Keep it tight — do not exceed these limits."
 )
 
 
@@ -28,6 +29,14 @@ class ContentAgent(BaseAgent):
         trigger = self._describe_trigger(change, news_item)
 
         draft = self._draft(trigger)
+        if not draft:
+            # LLM unavailable/failed: skip rather than queue placeholder junk.
+            self.log("content_skipped", risk_change_id=risk_change_id, reason="llm_unavailable")
+            if change is not None:
+                change.content_generated = True
+                change.save(update_fields=["content_generated"])
+            return {"content_item": None, "approval_ids": [], "skipped": True}
+
         item = ContentItem.objects.create(
             trigger_change=change,
             youtube_outline=draft.get("youtube_outline", ""),
@@ -72,15 +81,10 @@ class ContentAgent(BaseAgent):
             )
         return news_item or "General water-risk industry update."
 
-    def _draft(self, trigger: str) -> dict:
+    def _draft(self, trigger: str) -> dict | None:
         try:
-            # Bigger budget: this returns a full outline + 7-post thread + caption.
-            return self.think_json(_SYSTEM, f"Trigger event: {trigger}", temperature=0.4, max_tokens=3000)
-        except Exception as exc:  # noqa: BLE001 - degrade to a minimal draft
+            # Generous budget so the multi-part JSON is never truncated mid-string.
+            return self.think_json(_SYSTEM, f"Trigger event: {trigger}", temperature=0.4, max_tokens=4096)
+        except Exception as exc:  # noqa: BLE001 - skip (caller queues nothing)
             self.log("content_llm_failed", error=str(exc))
-            return {
-                "youtube_outline": f"[DRAFT NEEDED] {trigger}",
-                "twitter_thread": [f"[DRAFT NEEDED] {trigger}"],
-                "instagram_caption": f"[DRAFT NEEDED] {trigger}",
-                "visual_brief": "Bar chart of risk score change over time.",
-            }
+            return None
