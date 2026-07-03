@@ -112,6 +112,19 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Email (report delivery) ------------------------------------------------
+# Defaults to the console backend: sending a report just prints it to the logs,
+# so the flow works with zero setup. To send real email, set
+# DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend and the
+# EMAIL_HOST/USER/PASSWORD vars (e.g. Gmail app password, Postmark, SES).
+EMAIL_BACKEND = os.getenv("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", True)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Nemo Water Risk <reports@example.com>")
+
 # Geospatial library paths. Left as None (Django auto-detects) locally; on
 # Heroku's apt buildpack you can point these at the installed .so files if
 # auto-detection fails (see docs/DEPLOY_HEROKU.md).

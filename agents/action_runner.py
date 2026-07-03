@@ -61,15 +61,38 @@ def _run_write_file(payload: dict) -> dict:
 
 
 def _run_send_report(payload: dict) -> dict:
-    # Stub: when an email provider (SES/Postmark/SendGrid) is configured, this
-    # regenerates the site's report and emails it to payload["to"]. Until then
-    # it logs, so an approved report request is a no-op rather than a failure.
-    logger.info("send_report (stub) to=%s site=%s", payload.get("to"), payload.get("site"))
-    return {
-        "ok": True,
-        "stub": True,
-        "detail": "email provider not configured; report would be generated and sent here",
-    }
+    """Render the site's report and email it to the requester.
+
+    Uses Django's email backend: the console backend (default) prints the email
+    to the logs, so this works with no setup; configure SMTP to send for real.
+    """
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+    from django.template.loader import render_to_string
+
+    from core.models import MonitoredSite
+    from core.views import _report_context
+
+    to = (payload or {}).get("to")
+    site_ref = (payload or {}).get("site")
+    if not to or not site_ref:
+        raise ActionError("send_report_missing_to_or_site")
+
+    site = MonitoredSite.objects.filter(reference=site_ref).first()
+    if site is None:
+        raise ActionError(f"site_not_found:{site_ref}")
+
+    html = render_to_string("public/report.html", _report_context(site))
+    message = EmailMessage(
+        subject=f"Water Risk Report — {site.name}",
+        body=html,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[to],
+    )
+    message.content_subtype = "html"
+    message.send(fail_silently=False)
+    logger.info("send_report sent to=%s site=%s backend=%s", to, site_ref, settings.EMAIL_BACKEND)
+    return {"ok": True, "to": to, "site": site_ref}
 
 
 def _run_post_twitter(payload: dict) -> dict:
