@@ -24,6 +24,9 @@ matplotlib==3.9.0
 
 # --- LLM ---
 anthropic==0.30.1
+# Pin httpx < 0.28: the anthropic 0.30.1 client passes proxies= to httpx, which
+# was removed in httpx 0.28 (causes: Client.__init__() unexpected kwarg 'proxies').
+httpx==0.27.2
 
 # --- Config / secrets ---
 python-dotenv==1.0.1
