@@ -8,15 +8,12 @@ to GitHub (or just a local git repo).
 
 ---
 
-## 1. (Recommended) Commit model migrations once, locally
+## 1. Migrations
 
-The release step will generate them automatically if you skip this, but
-committing them is cleaner and deterministic:
-
-```bash
-python manage.py makemigrations core
-git add core/migrations && git commit -m "Add model migrations"
-```
+Migration files are committed to the repo, and the release phase runs
+`migrate --fake-initial`. Nothing to do here — schema changes apply
+deterministically on deploy. (When you change a model, run
+`python manage.py makemigrations core` locally and commit the new file.)
 
 ## 2. Create the app with the right buildpacks
 

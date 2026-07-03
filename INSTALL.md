@@ -42,11 +42,14 @@ Fill in at minimum:
 ## 5. Migrate & seed
 
 ```bash
-python manage.py makemigrations core   # generate model migrations (first run)
-python manage.py migrate                # applies PostGIS extension + tables
+python manage.py migrate                # applies PostGIS extension + tables (committed migrations)
 python manage.py seed_demo              # demo watershed + site + sample data
 python manage.py createsuperuser
 ```
+
+Model changes ship with committed migration files, so `migrate` is all you
+need. If you change a model, generate its migration with
+`python manage.py makemigrations core` and commit the new file.
 
 ## 6. Run the pipeline
 
