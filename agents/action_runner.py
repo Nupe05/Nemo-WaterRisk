@@ -82,7 +82,8 @@ def _run_send_report(payload: dict) -> dict:
     if site is None:
         raise ActionError(f"site_not_found:{site_ref}")
 
-    html = render_to_string("public/report.html", _report_context(site))
+    # Email-safe template (tables + inline styles) so it renders in Gmail/Outlook.
+    html = render_to_string("public/report_email.html", _report_context(site))
     message = EmailMessage(
         subject=f"Water Risk Report — {site.name}",
         body=html,

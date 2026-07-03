@@ -1,0 +1,87 @@
+{% comment %}
+Email-safe version of the water-risk report. Uses tables, inline styles, and
+explicit bgcolor so it renders in Gmail/Outlook (which strip flexbox and
+background CSS on divs). The browser report at /report/ uses report.html.
+{% endcomment %}<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f2f4f7;font-family:Arial,Helvetica,sans-serif;color:#1a1f24;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f4f7;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <!-- header -->
+        <tr><td style="padding:22px 28px;border-bottom:3px solid #0b3d5c;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="font-size:17px;font-weight:bold;color:#0b3d5c;">Nemo Water Risk
+              <div style="font-size:10px;font-weight:bold;letter-spacing:1.5px;color:#5b6b78;text-transform:uppercase;padding-top:3px;">Confidential Site Risk Report</div>
+            </td>
+            <td align="right" style="font-size:12px;color:#5b6b78;">
+              Report date: {{ today|date:"F j, Y" }}<br>Reference: {{ row.reference }}
+            </td>
+          </tr></table>
+        </td></tr>
+
+        <!-- title -->
+        <tr><td style="padding:22px 28px 6px;">
+          <div style="font-size:22px;font-weight:bold;color:#0b3d5c;">{{ row.name }}</div>
+          <div style="font-size:13px;color:#5b6b78;padding-top:4px;">{{ row.watershed }}{% if row.as_of %} &middot; data as of {{ row.as_of|date:"M j, Y" }}{% endif %}</div>
+        </td></tr>
+
+        <!-- score card (bgcolor on td so it renders) -->
+        <tr><td style="padding:6px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0b3d5c" style="background:#0b3d5c;border-radius:12px;">
+            <tr>
+              <td style="padding:20px 24px;">
+                <span style="font-size:46px;font-weight:bold;color:#ffffff;">{% if row.score is not None %}{{ row.score }}{% else %}&mdash;{% endif %}</span>
+                <span style="font-size:16px;color:#ffffff;opacity:0.7;">/100</span>
+              </td>
+              <td align="right" style="padding:20px 24px;">
+                <span style="display:inline-block;padding:4px 14px;border-radius:14px;background:{{ row.color }};color:#ffffff;font-size:13px;font-weight:bold;">{{ row.band }} risk</span>
+                <div style="font-size:12px;color:#ffffff;opacity:0.8;padding-top:6px;">Composite water-supply risk (0&ndash;100)</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- assessment -->
+        <tr><td style="padding:22px 28px 0;">
+          <div style="font-size:13px;font-weight:bold;color:#0b3d5c;text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;">Assessment</div>
+          <div style="font-size:14px;line-height:1.6;">{{ narrative }}</div>
+        </td></tr>
+
+        <!-- components -->
+        {% if components %}
+        <tr><td style="padding:22px 28px 0;">
+          <div style="font-size:13px;font-weight:bold;color:#0b3d5c;text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;">Score components</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+            <tr style="color:#0b3d5c;font-weight:bold;">
+              <td style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Driver</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Value</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Weight</td>
+            </tr>
+            {% for c in components %}
+            <tr>
+              <td style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.label }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.value }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.weight }}%</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td></tr>
+        {% endif %}
+
+        <!-- prepared for + footer -->
+        <tr><td style="padding:20px 28px 0;font-size:13px;color:#5b6b78;">Prepared for: ______________________________</td></tr>
+        <tr><td style="padding:18px 28px 26px;">
+          <div style="border-top:1px solid #e2e6ea;padding-top:12px;font-size:10.5px;color:#8a97a2;line-height:1.5;">
+            Methodology: composite of USGS streamflow deficit vs. historical daily median, U.S. Drought
+            Monitor severity (DSCI), and EPA withdrawal pressure, weighted and scaled 0&ndash;100. Built
+            from public data for risk-planning purposes; not a guarantee of future water availability.
+            &copy; Nemo Water Risk.
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
