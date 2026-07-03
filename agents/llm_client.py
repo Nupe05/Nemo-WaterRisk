@@ -59,7 +59,8 @@ def parse_json_object(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    raise LLMError("llm_invalid_json")
+    # Include a snippet of the raw response so failures are diagnosable in logs.
+    raise LLMError(f"llm_invalid_json | raw[:300]={trimmed[:300]!r}")
 
 
 def call_llm_json(
