@@ -24,9 +24,11 @@ class BaseAgent:
     def log(self, event: str, **fields):
         logger.info("%s %s", event, fields)
 
-    def think_json(self, system_prompt: str, user_prompt: str, *, temperature: float = 0.2) -> dict:
+    def think_json(
+        self, system_prompt: str, user_prompt: str, *, temperature: float = 0.2, max_tokens: int | None = None
+    ) -> dict:
         """Structured reasoning: returns a parsed JSON object from Claude."""
-        return call_llm_json(system_prompt, user_prompt, temperature=temperature)
+        return call_llm_json(system_prompt, user_prompt, temperature=temperature, max_tokens=max_tokens)
 
     def queue_for_approval(
         self,

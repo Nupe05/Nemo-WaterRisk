@@ -58,8 +58,15 @@ def parse_json_object(text: str) -> dict:
     raise LLMError("llm_invalid_json")
 
 
-def call_llm_json(system_prompt: str, user_prompt: str, *, temperature: float = 0.2) -> dict:
-    """Call Claude and return a parsed JSON object. Raises LLMError on failure."""
+def call_llm_json(
+    system_prompt: str, user_prompt: str, *, temperature: float = 0.2, max_tokens: int | None = None
+) -> dict:
+    """Call Claude and return a parsed JSON object. Raises LLMError on failure.
+
+    Uses an assistant prefill of "{" so the model is forced to emit a JSON
+    object (no prose wrapper), which we restore before parsing. Pass a larger
+    `max_tokens` for big multi-part responses so the JSON isn't truncated.
+    """
     cfg = settings.NEMO
     model = cfg.get("LLM_MODEL")
     if not model:
@@ -76,16 +83,22 @@ def call_llm_json(system_prompt: str, user_prompt: str, *, temperature: float = 
     try:
         message = client.messages.create(
             model=model,
-            max_tokens=cfg["LLM_MAX_TOKENS"],
+            max_tokens=max_tokens or cfg["LLM_MAX_TOKENS"],
             temperature=temperature,
             system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
+            messages=[
+                {"role": "user", "content": user_prompt},
+                # Prefill forces the reply to be a JSON object.
+                {"role": "assistant", "content": "{"},
+            ],
             timeout=timeout_s,
         )
     except Exception as exc:  # noqa: BLE001 - normalize SDK errors
         raise LLMError(f"llm_call_failed:{exc}") from exc
 
     text = _extract_text(message)
+    if not text.lstrip().startswith("{"):
+        text = "{" + text  # restore the prefilled opening brace
     if len(text) > cfg["LLM_MAX_RESPONSE_CHARS"]:
         raise LLMError(f"llm_response_too_large:{len(text)}")
     return parse_json_object(text)

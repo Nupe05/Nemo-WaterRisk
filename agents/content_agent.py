@@ -74,7 +74,8 @@ class ContentAgent(BaseAgent):
 
     def _draft(self, trigger: str) -> dict:
         try:
-            return self.think_json(_SYSTEM, f"Trigger event: {trigger}", temperature=0.4)
+            # Bigger budget: this returns a full outline + 7-post thread + caption.
+            return self.think_json(_SYSTEM, f"Trigger event: {trigger}", temperature=0.4, max_tokens=3000)
         except Exception as exc:  # noqa: BLE001 - degrade to a minimal draft
             self.log("content_llm_failed", error=str(exc))
             return {
