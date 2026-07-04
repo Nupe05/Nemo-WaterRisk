@@ -97,9 +97,50 @@ def _run_send_report(payload: dict) -> dict:
 
 
 def _run_post_twitter(payload: dict) -> dict:
-    # Stub: integrate tweepy here once X credentials are set in env.
-    logger.info("post_twitter (stub) posts=%s", len(payload.get("thread", [])))
-    return {"ok": True, "stub": True, "detail": "X credentials not configured"}
+    """Publish an approved thread to X/Twitter via OAuth 1.0a user context.
+
+    Reads the four keys from env (X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN,
+    X_ACCESS_SECRET). Each post is chained as a reply to the previous one to
+    form a thread. Raises ActionError if credentials are missing or the API
+    call fails, so a failed post is visible rather than silent.
+    """
+    thread = [str(p).strip() for p in (payload.get("thread") or []) if str(p).strip()]
+    if not thread:
+        raise ActionError("empty_thread")
+
+    creds = {k: (os.getenv(k) or "").strip() for k in
+             ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET")}
+    missing = [k for k, v in creds.items() if not v]
+    if missing:
+        raise ActionError(f"x_credentials_not_configured:{','.join(missing)}")
+
+    try:
+        import tweepy
+    except ImportError as exc:  # pragma: no cover
+        raise ActionError("tweepy_not_installed") from exc
+
+    client = tweepy.Client(
+        consumer_key=creds["X_API_KEY"],
+        consumer_secret=creds["X_API_SECRET"],
+        access_token=creds["X_ACCESS_TOKEN"],
+        access_token_secret=creds["X_ACCESS_SECRET"],
+    )
+
+    tweet_ids, prev_id = [], None
+    try:
+        for post in thread:
+            resp = client.create_tweet(text=post[:280], in_reply_to_tweet_id=prev_id)
+            prev_id = resp.data["id"]
+            tweet_ids.append(prev_id)
+    except Exception as exc:  # noqa: BLE001 - normalize tweepy/API errors
+        raise ActionError(f"x_post_failed:{exc} (posted {len(tweet_ids)}/{len(thread)})") from exc
+
+    logger.info("post_twitter published %s posts, root=%s", len(tweet_ids), tweet_ids[0])
+    return {
+        "ok": True,
+        "tweet_ids": tweet_ids,
+        "url": f"https://x.com/NemoWaterRisk/status/{tweet_ids[0]}",
+    }
 
 
 def _run_post_youtube(payload: dict) -> dict:

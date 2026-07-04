@@ -43,27 +43,31 @@ def test_runner_refuses_pending_item():
 
 
 @pytest.mark.django_db
-def test_runner_executes_approved_item():
+def test_runner_executes_approved_item(settings, tmp_path):
+    # write_file needs no external config, so it exercises the runner cleanly.
+    settings.NEMO = {**settings.NEMO, "WORKSPACE_ROOT": str(tmp_path)}
     item = ApprovalItem.objects.create(
-        content_type="social_content",
-        action_type=ApprovalItem.ActionType.POST_TWITTER,
+        content_type="report",
+        action_type=ApprovalItem.ActionType.WRITE_FILE,
         state=ApprovalItem.State.APPROVED,
-        payload={"thread": ["hi"]},
+        payload={"path": "out.txt", "content": "hi"},
     )
     action_runner.execute_item(item)
     item.refresh_from_db()
     assert item.state == ApprovalItem.State.EXECUTED
+    assert (tmp_path / "out.txt").read_text() == "hi"
 
 
 @pytest.mark.django_db
-def test_run_approved_queue_skips_pending():
+def test_run_approved_queue_skips_pending(settings, tmp_path):
+    settings.NEMO = {**settings.NEMO, "WORKSPACE_ROOT": str(tmp_path)}
     ApprovalItem.objects.create(
         content_type="x", action_type=ApprovalItem.ActionType.POST_TWITTER,
         state=ApprovalItem.State.PENDING, payload={},
     )
     approved = ApprovalItem.objects.create(
-        content_type="x", action_type=ApprovalItem.ActionType.POST_TWITTER,
-        state=ApprovalItem.State.APPROVED, payload={"thread": []},
+        content_type="report", action_type=ApprovalItem.ActionType.WRITE_FILE,
+        state=ApprovalItem.State.APPROVED, payload={"path": "a.txt", "content": "y"},
     )
     results = action_runner.run_approved_queue()
     ids = [r["id"] for r in results]
