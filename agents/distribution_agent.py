@@ -15,7 +15,16 @@ class DistributionAgent(BaseAgent):
     name = "distribution"
 
     def run(self, *, limit: int = 50) -> dict:
-        results = run_approved_queue(limit=limit)
+        # Social posting is drip-scheduled by `post_scheduled`, so the sweep
+        # skips it and handles everything else (email replies, reports).
+        from core.models import ApprovalItem
+
+        social = [
+            ApprovalItem.ActionType.POST_TWITTER,
+            ApprovalItem.ActionType.POST_INSTAGRAM,
+            ApprovalItem.ActionType.POST_YOUTUBE,
+        ]
+        results = run_approved_queue(limit=limit, exclude=social)
         executed = sum(1 for r in results if r.get("ok"))
         self.log("distribution_sweep", executed=executed, total=len(results))
         return {"executed": executed, "results": results}

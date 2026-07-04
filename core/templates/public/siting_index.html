@@ -1,0 +1,70 @@
+{% extends "public/base.html" %}
+{% block title %}Data-Center Siting Index{% endblock %}
+{% block description %}Ranked U.S. metros for new data-center builds, scored on power availability, water headroom, and natural-hazard safety.{% endblock %}
+{% block og_title %}Nemo Data-Center Siting Index{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Where to Build: Data-Center Siting Index</h1>
+  <p>The other side of water risk. We rank the major U.S. data-center markets on
+     the three factors that actually decide a build &mdash; <strong>power</strong>
+     (interconnection queue &amp; time-to-energize), <strong>water</strong> (cooling
+     headroom), and <strong>hazard</strong> (natural-hazard safety) &mdash; from public
+     ISO, USGS, and FEMA data. Higher score = better site.</p>
+</section>
+
+{% if leader %}
+<div class="featured">
+  <div class="sub">Top-ranked market in the index</div>
+  <div class="stat">{{ leader.metro }} &mdash; {{ leader.suitability }}<span style="font-size:18px;opacity:.7">/100</span></div>
+  <div class="sub">{{ leader.grade }} &middot; power {{ leader.power }} &middot; water {{ leader.water }} &middot; hazard {{ leader.hazard }}</div>
+</div>
+{% endif %}
+
+<div class="grid">
+  {% for m in metros %}
+  <a class="card" href="/siting/{{ m.slug }}/">
+    <div class="name">#{{ m.rank }} · {{ m.metro }}</div>
+    <div class="ws">{{ m.county_count }} counties · {{ m.power_region }} grid</div>
+    <div class="scorebar">
+      <span class="num" style="color:{{ m.color }}">{{ m.suitability }}</span>
+      <span class="pill" style="background:{{ m.color }}">{{ m.grade }}</span>
+    </div>
+    <table style="margin-top:10px;">
+      <tr><td style="padding:2px 0;border:0;font-size:12px;color:#5b6b78;width:64px;">Power</td>
+          <td style="padding:2px 0;border:0;"><div class="barwrap"><div class="bar" style="width:{{ m.power }}%;"></div></div></td>
+          <td style="padding:2px 6px;border:0;font-size:12px;width:32px;">{{ m.power }}</td></tr>
+      <tr><td style="padding:2px 0;border:0;font-size:12px;color:#5b6b78;">Water</td>
+          <td style="padding:2px 0;border:0;"><div class="barwrap"><div class="bar" style="width:{{ m.water }}%;background:#1d6b3a;"></div></div></td>
+          <td style="padding:2px 6px;border:0;font-size:12px;">{{ m.water }}</td></tr>
+      <tr><td style="padding:2px 0;border:0;font-size:12px;color:#5b6b78;">Hazard</td>
+          <td style="padding:2px 0;border:0;"><div class="barwrap"><div class="bar" style="width:{{ m.hazard }}%;background:#e0a800;"></div></div></td>
+          <td style="padding:2px 6px;border:0;font-size:12px;">{{ m.hazard }}</td></tr>
+    </table>
+  </a>
+  {% empty %}
+  <p>No markets have been scored yet. Run <code>python manage.py score_siting</code>.</p>
+  {% endfor %}
+</div>
+
+<section class="signup" id="unlock">
+  <h2>Unlock the full siting report</h2>
+  <p>The index ranks markets for free. The paid report breaks each market down to the
+     <strong>county level</strong> &mdash; per-county power, water, and hazard scores, the
+     specific hazards in play, and established-vs-emerging submarkets &mdash; so you can
+     shortlist parcels, not just metros. Leave your email and tell us the market you&rsquo;re
+     evaluating.</p>
+  {% if subscribed %}
+    <div class="ok">Thanks &mdash; we&rsquo;ll send your siting report shortly.</div>
+  {% endif %}
+  <form class="form-row" method="post" action="/siting/subscribe/">
+    {% csrf_token %}
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <select name="metro" style="padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;min-width:220px;">
+      <option value="">Which market?</option>
+      {% for m in metros %}<option value="{{ m.metro }}">{{ m.metro }}</option>{% endfor %}
+    </select>
+    <button type="submit">Send me the report</button>
+  </form>
+</section>
+{% endblock %}

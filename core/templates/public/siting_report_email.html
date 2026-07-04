@@ -1,0 +1,107 @@
+{% comment %}
+Email-safe data-center siting report. Tables + inline styles + explicit bgcolor
+so it renders in Gmail/Outlook. Browser/PDF version is siting_report.html.
+{% endcomment %}<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f2f4f7;font-family:Arial,Helvetica,sans-serif;color:#1a1f24;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f4f7;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:640px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <!-- header -->
+        <tr><td style="padding:22px 28px;border-bottom:3px solid #0b3d5c;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="font-size:17px;font-weight:bold;color:#0b3d5c;">Nemo Water Risk
+              <div style="font-size:10px;font-weight:bold;letter-spacing:1.5px;color:#5b6b78;text-transform:uppercase;padding-top:3px;">Confidential Siting Report</div>
+            </td>
+            <td align="right" style="font-size:12px;color:#5b6b78;">Report date: {{ today|date:"F j, Y" }}<br>Market: {{ m.metro }}</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- title -->
+        <tr><td style="padding:22px 28px 6px;">
+          <div style="font-size:22px;font-weight:bold;color:#0b3d5c;">{{ m.metro }}</div>
+          <div style="font-size:13px;color:#5b6b78;padding-top:4px;">National rank #{{ m.rank }} &middot; {{ m.county_count }} counties &middot; {{ m.power_region }} grid</div>
+        </td></tr>
+
+        <!-- score card -->
+        <tr><td style="padding:6px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0b3d5c" style="background:#0b3d5c;border-radius:12px;">
+            <tr>
+              <td style="padding:20px 24px;">
+                <span style="font-size:46px;font-weight:bold;color:#ffffff;">{{ m.suitability }}</span>
+                <span style="font-size:16px;color:#ffffff;opacity:0.7;">/100</span>
+              </td>
+              <td align="right" style="padding:20px 24px;">
+                <span style="display:inline-block;padding:4px 14px;border-radius:14px;background:{{ m.color }};color:#ffffff;font-size:13px;font-weight:bold;">{{ m.grade }}</span>
+                <div style="font-size:12px;color:#ffffff;opacity:0.8;padding-top:6px;">Composite siting suitability (higher = better)</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- assessment -->
+        <tr><td style="padding:22px 28px 0;">
+          <div style="font-size:13px;font-weight:bold;color:#0b3d5c;text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;">Assessment</div>
+          <div style="font-size:14px;line-height:1.6;">{{ narrative }}</div>
+        </td></tr>
+
+        <!-- market factors -->
+        <tr><td style="padding:22px 28px 0;">
+          <div style="font-size:13px;font-weight:bold;color:#0b3d5c;text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;">Market factors</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+            <tr style="color:#0b3d5c;font-weight:bold;">
+              <td style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Factor</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Score</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Weight</td>
+            </tr>
+            {% for leg in legs %}
+            <tr>
+              <td style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ leg.label }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ leg.value }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ leg.weight }}%</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td></tr>
+
+        <!-- county breakdown -->
+        <tr><td style="padding:22px 28px 0;">
+          <div style="font-size:13px;font-weight:bold;color:#0b3d5c;text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;">County breakdown</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:12.5px;">
+            <tr style="color:#0b3d5c;font-weight:bold;">
+              <td style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">County</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Suit.</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Pwr</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Wtr</td>
+              <td align="right" style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Haz</td>
+              <td style="padding:6px 4px;border-bottom:1px solid #e2e6ea;">Key hazards</td>
+            </tr>
+            {% for c in counties %}
+            <tr>
+              <td style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.name }}<div style="font-size:10.5px;color:#8a97a2;text-transform:capitalize;">{{ c.market_status }}</div></td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;font-weight:bold;color:{{ c.grade_color }};">{{ c.suitability }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.power }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.water }}</td>
+              <td align="right" style="padding:7px 4px;border-bottom:1px solid #eef1f4;">{{ c.hazard }}</td>
+              <td style="padding:7px 4px;border-bottom:1px solid #eef1f4;color:#5b6b78;">{{ c.top_hazards }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td></tr>
+
+        <!-- footer -->
+        <tr><td style="padding:18px 28px 26px;">
+          <div style="border-top:1px solid #e2e6ea;padding-top:12px;font-size:10.5px;color:#8a97a2;line-height:1.5;">
+            Methodology: composite of power availability (ISO interconnection-queue backlog and
+            time-to-energize), water headroom (USGS + U.S. Drought Monitor), and physical-hazard
+            safety (FEMA National Risk Index), each 0&ndash;100 (higher = better), weighted. Scores
+            are relative rankings for shortlisting; confirm with site-specific utility and
+            water-rights diligence. Built from public data. &copy; Nemo Water Risk.
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

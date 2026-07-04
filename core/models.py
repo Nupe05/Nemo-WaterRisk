@@ -174,6 +174,7 @@ class ApprovalItem(models.Model):
         POST_YOUTUBE = "post_youtube", "Publish YouTube content"
         POST_INSTAGRAM = "post_instagram", "Post Instagram"
         EMAIL_REPLY = "email_reply", "Email reply to an inbound message"
+        SEND_SITING_REPORT = "send_siting_report", "Email site-selection report"
 
     task = models.ForeignKey(
         AgentTask, null=True, blank=True, on_delete=models.SET_NULL, related_name="approvals"
@@ -272,3 +273,58 @@ class MailboxCredential(models.Model):
 
     def __str__(self):
         return f"Mailbox<{self.customer_id}:{self.status}>"
+
+
+# ---------------------------------------------------------------------------
+# Site selection ("where to build") — the proactive siting product
+# ---------------------------------------------------------------------------
+class SitingLocation(models.Model):
+    """A candidate county the siting engine scores, grouped into a metro market.
+
+    Seeded from integrations.siting_locations.LOCATIONS. Kept as a table (not
+    just a Python list) so scores, ranks, and the public teaser can be queried
+    and joined like any other domain data.
+    """
+
+    county_fips = models.CharField(max_length=5, unique=True, db_index=True)
+    county_name = models.CharField(max_length=128)
+    state_fips = models.CharField(max_length=2, db_index=True)
+    metro = models.CharField(max_length=128, db_index=True)
+    market_status = models.CharField(max_length=16, default="emerging")  # established | emerging
+    is_public_teaser = models.BooleanField(
+        default=True, help_text="Include this metro in the free public siting teaser."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["metro", "county_name"]
+
+    def __str__(self):
+        return f"{self.county_name} ({self.metro})"
+
+
+class SitingScore(models.Model):
+    """A computed data-center suitability score for a candidate county.
+
+    Higher = more suitable (the inverse direction of WaterRiskScore). The three
+    legs are the favorability sub-scores that fed the composite.
+    """
+
+    location = models.ForeignKey(
+        SitingLocation, on_delete=models.CASCADE, related_name="scores"
+    )
+    suitability = models.FloatField(help_text="0-100 composite; higher = better site.")
+    water = models.FloatField(default=0.0)
+    power = models.FloatField(default=0.0)
+    hazard = models.FloatField(default=0.0)
+    grade = models.CharField(max_length=16, blank=True, default="")
+    rank = models.PositiveIntegerField(null=True, blank=True, help_text="1 = best county this run.")
+    detail = models.JSONField(default=dict, blank=True, help_text="Weights, notes, hazard list, ISO region.")
+    computed_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-suitability"]
+        indexes = [models.Index(fields=["-suitability", "computed_at"], name="core_siting_suitabi_idx")]
+
+    def __str__(self):
+        return f"SitingScore<{self.location.county_name}={self.suitability}>"

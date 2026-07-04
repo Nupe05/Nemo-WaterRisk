@@ -1,0 +1,47 @@
+{% extends "public/base.html" %}
+{% block title %}{{ m.metro }} — Siting Score{% endblock %}
+{% block description %}Data-center siting score for {{ m.metro }}: power, water, and hazard.{% endblock %}
+
+{% block content %}
+<a class="back" href="/siting/">&larr; All markets</a>
+
+<section class="hero">
+  <h1>{{ m.metro }}</h1>
+  <p>Rank #{{ m.rank }} of the markets in the index &middot; {{ m.county_count }} candidate
+     counties &middot; {{ m.power_region }} interconnection region.</p>
+</section>
+
+<div class="featured">
+  <div class="sub">Composite siting suitability</div>
+  <div class="stat">{{ m.suitability }}<span style="font-size:18px;opacity:.7">/100</span>
+    <span class="pill" style="background:{{ m.color }};vertical-align:middle;margin-left:8px;">{{ m.grade }}</span></div>
+  <div class="sub">Best submarket: {{ m.best_county }} &middot; typical energize time ~{{ m.power_years }} yrs</div>
+</div>
+
+<table>
+  <tr><th>Factor</th><th>Score (higher = better)</th><th style="text-align:right;">Value</th></tr>
+  {% for leg in legs %}
+  <tr>
+    <td>{{ leg.label }}</td>
+    <td><div class="barwrap"><div class="bar" style="width:{{ leg.value }}%;"></div></div></td>
+    <td style="text-align:right;font-weight:700;">{{ leg.value }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<section class="signup" id="unlock">
+  <h2>Get the county-level breakdown for {{ m.metro }}</h2>
+  <p>This page shows the market-level score. The full report scores each of the
+     {{ m.county_count }} counties individually &mdash; per-county power, water, and hazard,
+     the specific hazards in play, and which submarkets are established vs. emerging.</p>
+  {% if request.GET.subscribed %}
+    <div class="ok">Thanks &mdash; we&rsquo;ll send your {{ m.metro }} report shortly.</div>
+  {% endif %}
+  <form class="form-row" method="post" action="/siting/subscribe/">
+    {% csrf_token %}
+    <input type="hidden" name="metro" value="{{ m.metro }}">
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <button type="submit">Send me the {{ m.metro }} report</button>
+  </form>
+</section>
+{% endblock %}

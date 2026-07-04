@@ -95,3 +95,18 @@ class InboundEmailAdmin(admin.ModelAdmin):
 class MailboxCredentialAdmin(admin.ModelAdmin):
     list_display = ("customer_id", "provider", "email_address", "status", "updated_at")
     exclude = ("encrypted_tokens",)  # never render secrets in admin
+
+
+@admin.register(models.SitingLocation)
+class SitingLocationAdmin(admin.ModelAdmin):
+    list_display = ("county_name", "metro", "market_status", "county_fips", "is_public_teaser")
+    list_filter = ("metro", "market_status", "is_public_teaser")
+    search_fields = ("county_name", "metro", "county_fips")
+
+
+@admin.register(models.SitingScore)
+class SitingScoreAdmin(admin.ModelAdmin):
+    list_display = ("rank", "location", "suitability", "grade", "water", "power", "hazard", "computed_at")
+    list_filter = ("grade",)
+    search_fields = ("location__county_name", "location__metro")
+    date_hierarchy = "computed_at"

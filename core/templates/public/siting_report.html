@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Data-Center Siting Report — {{ m.metro }}</title>
+  <style>
+    :root { --navy:#0b3d5c; --ink:#1a1f24; --muted:#5b6b78; --line:#e2e6ea; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; color:var(--ink); }
+    .page { max-width:820px; margin:0 auto; padding:36px 40px; }
+    .head { border-bottom:3px solid var(--navy); padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-end; }
+    .brand { font-size:18px; font-weight:bold; color:var(--navy); }
+    .kicker { font-size:10px; font-weight:bold; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; padding-top:3px; }
+    .meta { font-size:12px; color:var(--muted); text-align:right; }
+    h1 { font-size:24px; color:var(--navy); margin:22px 0 2px; }
+    .sub { color:var(--muted); font-size:13px; }
+    .card { background:var(--navy); border-radius:12px; padding:20px 24px; color:#fff; margin:18px 0; display:flex; justify-content:space-between; align-items:center; }
+    .score { font-size:46px; font-weight:bold; }
+    .pill { display:inline-block; padding:4px 14px; border-radius:14px; color:#fff; font-size:13px; font-weight:bold; }
+    h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--navy); margin:22px 0 8px; }
+    p.narr { font-size:14px; line-height:1.6; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; color:var(--navy); border-bottom:1px solid var(--line); padding:7px 6px; }
+    td { border-bottom:1px solid #eef1f4; padding:7px 6px; }
+    .num { text-align:right; }
+    .foot { border-top:1px solid var(--line); margin-top:26px; padding-top:12px; font-size:10.5px; color:#8a97a2; line-height:1.5; }
+    @media print { .page { padding:0; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="head">
+      <div><div class="brand">Nemo Water Risk</div><div class="kicker">Confidential Data-Center Siting Report</div></div>
+      <div class="meta">Report date: {{ today|date:"F j, Y" }}<br>Market: {{ m.metro }}</div>
+    </div>
+
+    <h1>{{ m.metro }}</h1>
+    <div class="sub">National rank #{{ m.rank }} &middot; {{ m.county_count }} candidate counties &middot; {{ m.power_region }} interconnection region &middot; typical energize ~{{ m.power_years }} yrs</div>
+
+    <div class="card">
+      <div><span class="score">{{ m.suitability }}</span><span style="opacity:.7;"> /100</span>
+        <div style="opacity:.8;font-size:12px;">Composite siting suitability (higher = better)</div></div>
+      <div><span class="pill" style="background:{{ m.color }}">{{ m.grade }}</span></div>
+    </div>
+
+    <h2>Assessment</h2>
+    <p class="narr">{{ narrative }}</p>
+
+    <h2>Market factors</h2>
+    <table>
+      <tr><th>Factor</th><th class="num">Score</th><th class="num">Weight</th></tr>
+      {% for leg in legs %}
+      <tr><td>{{ leg.label }}</td><td class="num">{{ leg.value }}</td><td class="num">{{ leg.weight }}%</td></tr>
+      {% endfor %}
+    </table>
+
+    <h2>County breakdown</h2>
+    <table>
+      <tr>
+        <th>County</th><th>Submarket</th>
+        <th class="num">Suitability</th><th class="num">Power</th>
+        <th class="num">Water</th><th class="num">Hazard</th><th>Key hazards</th>
+      </tr>
+      {% for c in counties %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td style="text-transform:capitalize;color:var(--muted);">{{ c.market_status }}</td>
+        <td class="num" style="font-weight:bold;color:{{ c.grade_color }};">{{ c.suitability }}</td>
+        <td class="num">{{ c.power }}</td>
+        <td class="num">{{ c.water }}</td>
+        <td class="num">{{ c.hazard }}</td>
+        <td style="color:var(--muted);">{{ c.top_hazards }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <div class="foot">
+      Methodology: composite of power availability (ISO/RTO interconnection-queue backlog and
+      time-to-energize; LBNL &amp; ISO data), water headroom (USGS water/streamflow context and
+      U.S. Drought Monitor climatology), and physical-hazard safety (FEMA National Risk Index),
+      each 0&ndash;100 where higher is more favorable, weighted power {{ legs.0.weight }}% /
+      water {{ legs.1.weight }}% / hazard {{ legs.2.weight }}%. Scores are relative rankings across
+      candidate markets for shortlisting; confirm with site-specific utility and water-rights
+      diligence. Built from public data. &copy; Nemo Water Risk.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from core import views
+from core import siting_views, views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -10,6 +10,11 @@ urlpatterns = [
     path("site/<str:site_ref>/", views.public_detail, name="public-detail"),
     path("report/<str:site_ref>/", views.site_report, name="site-report"),
     path("subscribe/", views.subscribe, name="subscribe"),
+    # Data-Center Siting Index — the proactive "where to build" product.
+    path("siting/", siting_views.siting_index, name="siting-index"),
+    path("siting/subscribe/", siting_views.siting_subscribe, name="siting-subscribe"),
+    path("siting/<slug:slug>/", siting_views.siting_metro, name="siting-metro"),
+    path("siting/report/<slug:slug>/", siting_views.siting_report, name="siting-report"),
     # SendGrid Inbound Parse webhook (append ?token=... — see docs/INBOUND_EMAIL.md).
     path("inbound/email/", views.inbound_email, name="inbound-email"),
     # JSON API for programmatic access.

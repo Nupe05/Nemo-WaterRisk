@@ -173,6 +173,41 @@ def _run_email_reply(payload: dict) -> dict:
     return {"ok": True, "to": to}
 
 
+def _run_send_siting_report(payload: dict) -> dict:
+    """Render a metro's site-selection report and email it to the requester.
+
+    Mirrors _run_send_report but for the siting product: the payload names a
+    metro, and we render the email-safe siting report (county breakdown +
+    water/power/hazard legs) from the latest SitingScore rows.
+    """
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+    from django.template.loader import render_to_string
+
+    from core.siting_views import siting_report_context
+
+    to = (payload or {}).get("to")
+    metro = (payload or {}).get("metro")
+    if not to or not metro:
+        raise ActionError("send_siting_report_missing_to_or_metro")
+
+    ctx = siting_report_context(metro)
+    if ctx is None:
+        raise ActionError(f"metro_not_found_or_unscored:{metro}")
+
+    html = render_to_string("public/siting_report_email.html", ctx)
+    message = EmailMessage(
+        subject=f"Data-Center Siting Report — {metro}",
+        body=html,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[to],
+    )
+    message.content_subtype = "html"
+    message.send(fail_silently=False)
+    logger.info("send_siting_report sent to=%s metro=%s", to, metro)
+    return {"ok": True, "to": to, "metro": metro}
+
+
 _HANDLERS = {
     ApprovalItem.ActionType.WRITE_FILE: _run_write_file,
     ApprovalItem.ActionType.SEND_REPORT: _run_send_report,
@@ -180,6 +215,7 @@ _HANDLERS = {
     ApprovalItem.ActionType.POST_YOUTUBE: _run_post_youtube,
     ApprovalItem.ActionType.POST_INSTAGRAM: _run_post_instagram,
     ApprovalItem.ActionType.EMAIL_REPLY: _run_email_reply,
+    ApprovalItem.ActionType.SEND_SITING_REPORT: _run_send_siting_report,
 }
 
 
@@ -211,10 +247,19 @@ def execute_item(item: ApprovalItem) -> ApprovalItem:
     return item
 
 
-def run_approved_queue(limit: int = 50) -> list[dict]:
-    """Execute all currently-approved items. Called by the distribution sweep."""
+def run_approved_queue(limit: int = 50, exclude: list | None = None) -> list[dict]:
+    """Execute currently-approved items, optionally excluding some action types.
+
+    The distribution sweep passes the social action types here because
+    drip-posting is owned by the `post_scheduled` command — this keeps the
+    frequent reply/report sweep from firing scheduled social ahead of its
+    cadence (they'd otherwise race for the same APPROVED rows).
+    """
     results = []
-    approved = ApprovalItem.objects.filter(state=ApprovalItem.State.APPROVED).order_by("created_at")[:limit]
+    qs = ApprovalItem.objects.filter(state=ApprovalItem.State.APPROVED)
+    if exclude:
+        qs = qs.exclude(action_type__in=exclude)
+    approved = qs.order_by("created_at")[:limit]
     for item in approved:
         try:
             execute_item(item)
