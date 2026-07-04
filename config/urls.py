@@ -10,6 +10,8 @@ urlpatterns = [
     path("site/<str:site_ref>/", views.public_detail, name="public-detail"),
     path("report/<str:site_ref>/", views.site_report, name="site-report"),
     path("subscribe/", views.subscribe, name="subscribe"),
+    # SendGrid Inbound Parse webhook (append ?token=... — see docs/INBOUND_EMAIL.md).
+    path("inbound/email/", views.inbound_email, name="inbound-email"),
     # JSON API for programmatic access.
     path("api/sites/", views.api_sites, name="api-sites"),
     path("api/sites/<str:site_ref>/", views.api_site_detail, name="api-site-detail"),

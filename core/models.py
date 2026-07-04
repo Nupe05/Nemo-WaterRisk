@@ -173,6 +173,7 @@ class ApprovalItem(models.Model):
         POST_TWITTER = "post_twitter", "Post X/Twitter thread"
         POST_YOUTUBE = "post_youtube", "Publish YouTube content"
         POST_INSTAGRAM = "post_instagram", "Post Instagram"
+        EMAIL_REPLY = "email_reply", "Email reply to an inbound message"
 
     task = models.ForeignKey(
         AgentTask, null=True, blank=True, on_delete=models.SET_NULL, related_name="approvals"
@@ -231,6 +232,26 @@ class Lead(models.Model):
 
     def __str__(self):
         return f"Lead<{self.email}>"
+
+
+class InboundEmail(models.Model):
+    """An email received via the SendGrid Inbound Parse webhook.
+
+    On receipt we auto-send a safe acknowledgment (hybrid mode) and queue an
+    AI-drafted personalized reply as an approval-gated EMAIL_REPLY action.
+    """
+
+    from_email = models.EmailField(db_index=True)
+    subject = models.CharField(max_length=500, blank=True, default="")
+    body = models.TextField(blank=True, default="")
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    acknowledged = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return f"InboundEmail<{self.from_email}: {self.subject[:40]}>"
 
 
 class MailboxCredential(models.Model):

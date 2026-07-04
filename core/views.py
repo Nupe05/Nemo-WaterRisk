@@ -5,16 +5,20 @@ signups tell you whether anyone will pay for the full methodology before you
 build a checkout page. Server-rendered HTML for shareability + a small JSON
 API for programmatic use.
 """
+import os
+import re
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from scoring.bands import band
 from scoring.model import WEIGHTS
-from .models import ApprovalItem, Lead, MonitoredSite, WaterRiskScore
+from .models import ApprovalItem, InboundEmail, Lead, MonitoredSite, WaterRiskScore
 
 COMPONENT_LABELS = {
     "streamflow_deficit": "Streamflow deficit",
@@ -176,6 +180,96 @@ def site_report(request, site_ref):
         except Exception:  # noqa: BLE001 - fall back to printable HTML
             pass
     return render(request, "public/report.html", ctx)
+
+
+# --- Inbound email (SendGrid Inbound Parse webhook) -------------------------
+_REPLY_SYSTEM = (
+    "You draft concise, professional email replies for Nemo Water Risk, an independent "
+    "water-supply risk intelligence service for U.S. data-center metros. Be helpful and "
+    "factual, point the sender to the public index at https://www.nemowaterrisk.com where "
+    "relevant, and NEVER invent specific risk numbers. Keep it under 150 words. "
+    'Return ONLY JSON: {"reply": "<plain-text email reply>"}.'
+)
+
+
+def _extract_email(raw: str) -> str:
+    match = re.search(r"[\w.\-+]+@[\w.\-]+\.\w+", raw or "")
+    return match.group(0).lower() if match else ""
+
+
+def _send_acknowledgment(to: str, subject: str) -> None:
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+
+    text = (
+        "Thanks for reaching out to Nemo Water Risk. We've received your message and will "
+        "follow up shortly.\n\nIn the meantime, our live water-risk index for the major U.S. "
+        "data-center metros is at https://www.nemowaterrisk.com.\n\n— Nemo Water Risk"
+    )
+    try:
+        EmailMessage(
+            subject=(f"Re: {subject}" if subject else "Thanks for reaching out")[:255],
+            body=text,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            to=[to],
+        ).send(fail_silently=True)
+    except Exception:  # noqa: BLE001 - acknowledgment is best-effort
+        pass
+
+
+def _queue_ai_reply(sender: str, subject: str, body: str) -> None:
+    from agents.llm_client import LLMError, call_llm_json
+
+    try:
+        data = call_llm_json(
+            _REPLY_SYSTEM,
+            f"Inbound email from {sender}\nSubject: {subject}\n\n{body}",
+            temperature=0.4,
+        )
+        reply = str(data.get("reply", "")).strip()
+    except LLMError:
+        reply = ""  # skip the AI reply; the acknowledgment already went out
+    if not reply:
+        return
+    ApprovalItem.objects.create(
+        content_type="email_reply",
+        action_type=ApprovalItem.ActionType.EMAIL_REPLY,
+        state=ApprovalItem.State.PENDING,
+        summary=f"Reply to {sender}: {(subject or body)[:60]}",
+        payload={
+            "to": sender,
+            "subject": f"Re: {subject}" if subject else "Re: your message",
+            "body": reply,
+        },
+    )
+
+
+@csrf_exempt
+@require_POST
+def inbound_email(request):
+    """Webhook for SendGrid Inbound Parse.
+
+    Hybrid autonomy: auto-sends a safe acknowledgment immediately, and queues an
+    AI-drafted personalized reply for approval. Protected by a shared secret in
+    the URL (?token=), set as INBOUND_EMAIL_TOKEN.
+    """
+    token = (os.getenv("INBOUND_EMAIL_TOKEN") or "").strip()
+    if token and request.GET.get("token") != token:
+        return HttpResponse(status=403)
+
+    sender = _extract_email(request.POST.get("from") or "")
+    subject = (request.POST.get("subject") or "").strip()
+    body = (request.POST.get("text") or request.POST.get("email") or "").strip()
+    if not sender:
+        return HttpResponse(status=200)  # nothing actionable; ack SendGrid anyway
+
+    InboundEmail.objects.create(from_email=sender, subject=subject[:500], body=body, acknowledged=True)
+    Lead.objects.get_or_create(email=sender, defaults={"source": "inbound_email"})
+
+    _send_acknowledgment(sender, subject)   # instant, safe
+    _queue_ai_reply(sender, subject, body)  # approval-gated, AI-drafted
+
+    return HttpResponse(status=200)
 
 
 # --- JSON API ---------------------------------------------------------------

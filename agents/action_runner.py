@@ -153,12 +153,33 @@ def _run_post_instagram(payload: dict) -> dict:
     return {"ok": True, "stub": True, "detail": "Instagram credentials not configured"}
 
 
+def _run_email_reply(payload: dict) -> dict:
+    """Send an approved AI-drafted reply to an inbound email."""
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+
+    to = (payload or {}).get("to")
+    body = (payload or {}).get("body")
+    if not to or not body:
+        raise ActionError("email_reply_missing_to_or_body")
+
+    EmailMessage(
+        subject=(payload.get("subject") or "Re: your message")[:255],
+        body=body,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[to],
+    ).send(fail_silently=False)
+    logger.info("email_reply sent to=%s", to)
+    return {"ok": True, "to": to}
+
+
 _HANDLERS = {
     ApprovalItem.ActionType.WRITE_FILE: _run_write_file,
     ApprovalItem.ActionType.SEND_REPORT: _run_send_report,
     ApprovalItem.ActionType.POST_TWITTER: _run_post_twitter,
     ApprovalItem.ActionType.POST_YOUTUBE: _run_post_youtube,
     ApprovalItem.ActionType.POST_INSTAGRAM: _run_post_instagram,
+    ApprovalItem.ActionType.EMAIL_REPLY: _run_email_reply,
 }
 
 

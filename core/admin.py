@@ -83,6 +83,14 @@ class LeadAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
+@admin.register(models.InboundEmail)
+class InboundEmailAdmin(admin.ModelAdmin):
+    list_display = ("from_email", "subject", "acknowledged", "received_at")
+    list_filter = ("acknowledged",)
+    search_fields = ("from_email", "subject", "body")
+    date_hierarchy = "received_at"
+
+
 @admin.register(models.MailboxCredential)
 class MailboxCredentialAdmin(admin.ModelAdmin):
     list_display = ("customer_id", "provider", "email_address", "status", "updated_at")
