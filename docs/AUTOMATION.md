@@ -44,6 +44,19 @@ daily_refresh complete: ingested=20 scored=5 changes=0 content_drafted=0
 Then check `Scheduler → job logs` (or `heroku logs --tail`) after the first
 scheduled run.
 
+## Scheduled posting (drip your approved content)
+
+Once content is approved in the admin, you can have it publish automatically on
+a cadence instead of running `distribute` by hand. Add a second Scheduler job:
+
+- Command: `python manage.py post_scheduled --limit 1`
+- Frequency: every few hours (e.g. hourly, or a couple of fixed times a day)
+
+Each run publishes the oldest approved X/Instagram/YouTube item, so a batch you
+approve gets spaced out like a real posting rhythm. The approval gate stays in
+place — only items *you* approved ever post. Reports and other actions are not
+touched by this job (it's social-only).
+
 ## When to graduate to Celery
 
 Heroku Scheduler runs at most hourly and only on fixed slots. If you later need
