@@ -10,7 +10,7 @@ approval-gated SEND_SITING_REPORT into the queue.
 from __future__ import annotations
 
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -186,6 +186,8 @@ def siting_report_context(metro_name: str) -> dict | None:
             "power": round(s.power),
             "hazard": round(s.hazard),
             "top_hazards": ", ".join(s.detail.get("top_hazards", []) or ["—"]),
+            "nri_rating": s.detail.get("nri_risk_rating") or "—",
+            "water_source": s.detail.get("water_source") or "structural",
         }
         for s in metro["counties"]
     ]
@@ -215,3 +217,87 @@ def siting_report(request, slug):
         except Exception:  # noqa: BLE001 - fall back to printable HTML
             pass
     return render(request, "public/siting_report.html", ctx)
+
+
+# --- The State of Data-Center Water Risk (public, citable, self-updating) ----
+def state_of_context() -> dict:
+    """Live context for the public 'State of Data-Center Water Risk' report.
+
+    Everything is derived from the latest SitingScore rollups, so the page and
+    its findings update automatically each time score_siting runs. Findings that
+    name a rank or a market are computed, not hard-coded, so they stay true as
+    the numbers move.
+    """
+    metros = _metro_rollup(public_only=False)
+    if not metros:
+        return {"has_data": False, "today": timezone.now()}
+
+    n = len(metros)
+    least_water = sorted(metros, key=lambda m: m["water"])[:5]
+    most_water = sorted(metros, key=lambda m: m["water"], reverse=True)[:5]
+    # Pre-zipped rows for the side-by-side water table (templates can't index).
+    water_pairs = [{"most": mo, "least": le} for mo, le in zip(most_water, least_water)]
+    # The flagship market (largest existing cluster) — Northern Virginia.
+    flagship = next((m for m in metros if "Virginia" in m["metro"]), None)
+    # Data freshness.
+    latest = SitingScore.objects.order_by("-computed_at").first()
+    return {
+        "has_data": True,
+        "metros": metros,
+        "count": n,
+        "leader": metros[0],
+        "least_water": least_water,
+        "most_water": most_water,
+        "water_pairs": water_pairs,
+        "flagship": flagship,
+        "as_of": latest.computed_at if latest else None,
+        "today": timezone.now(),
+    }
+
+
+def state_of_report(request):
+    """Public, permanent home of the report. Citable URL; self-updating.
+
+    `?pdf=1` returns a server-generated PDF when WeasyPrint is available, else
+    the print-clean HTML (which prints cleanly to PDF from the browser)."""
+    ctx = state_of_context()
+    if request.GET.get("pdf") and ctx.get("has_data"):
+        try:
+            from weasyprint import HTML
+
+            html = render_to_string("public/report_index.html", ctx, request=request)
+            pdf = HTML(string=html).write_pdf()
+            resp = HttpResponse(pdf, content_type="application/pdf")
+            resp["Content-Disposition"] = 'inline; filename="state-of-data-center-water-risk.pdf"'
+            return resp
+        except Exception:  # noqa: BLE001 - fall back to printable HTML
+            pass
+    return render(request, "public/report_index.html", ctx)
+
+
+def report_data(request):
+    """Machine-readable ranking behind the report — for citation & reproducibility."""
+    ctx = state_of_context()
+    if not ctx.get("has_data"):
+        return JsonResponse({"markets": [], "as_of": None})
+    markets = [
+        {
+            "rank": m["rank"],
+            "market": m["metro"],
+            "suitability": m["suitability"],
+            "grade": m["grade"],
+            "water_headroom": m["water"],
+            "power_availability": m["power"],
+            "hazard_safety": m["hazard"],
+        }
+        for m in ctx["metros"]
+    ]
+    return JsonResponse({
+        "report": "The State of Data-Center Water Risk",
+        "publisher": "Nemo Water Risk",
+        "as_of": ctx["as_of"].isoformat() if ctx["as_of"] else None,
+        "scale": "0-100, higher is more favorable for siting",
+        "weights": {"power": 0.40, "water": 0.35, "hazard": 0.25},
+        "market_count": ctx["count"],
+        "markets": markets,
+    })

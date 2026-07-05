@@ -1,0 +1,110 @@
+{% extends "public/base.html" %}
+{% block title %}The State of Data-Center Water Risk{% endblock %}
+{% block description %}An independent ranking of the major U.S. data-center markets on water, power, and natural-hazard risk. Updated automatically from public USGS, FEMA, and interconnection data.{% endblock %}
+{% block og_title %}The State of Data-Center Water Risk — Nemo{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>The State of Data-Center Water Risk</h1>
+  <p>An independent ranking of the major U.S. data-center markets on the three
+     factors that now decide a build &mdash; <strong>water</strong>,
+     <strong>power</strong>, and <strong>natural-hazard risk</strong>. Built from
+     authoritative public data and updated automatically.
+     {% if as_of %}<br><span style="font-size:13px;">Data current as of {{ as_of|date:"F j, Y" }}.</span>{% endif %}</p>
+  <p style="margin-top:12px;font-size:14px;">
+    <a href="/report/?pdf=1">Download PDF</a> &nbsp;&middot;&nbsp;
+    <a href="/report/data/">Raw data (JSON)</a> &nbsp;&middot;&nbsp;
+    <a href="/siting/">Explore the full index</a>
+  </p>
+</section>
+
+{% if not has_data %}
+<p>The index has not been scored yet. Please check back shortly.</p>
+{% else %}
+
+<h2 style="color:#0b3d5c;">Key findings</h2>
+<ul>
+  {% if flagship %}
+  <li><strong>The flagship market is not the strongest.</strong> {{ flagship.metro }} &mdash;
+      the largest existing data-center cluster &mdash; ranks
+      <strong>#{{ flagship.rank }} of {{ count }}</strong>, with power availability of
+      {{ flagship.power }}/100 weighing against it.</li>
+  {% endif %}
+  <li><strong>The hottest growth markets have the least water.</strong> The lowest
+      water-headroom markets on the index are
+      {% for m in least_water %}{{ m.metro }} ({{ m.water }}){% if not forloop.last %}, {% endif %}{% endfor %}.</li>
+  <li><strong>Water and power are the same problem.</strong> Most of a data center's
+      water footprint is upstream at the power plants that supply it, so the
+      power-constrained markets are frequently water-constrained too &mdash; the
+      risks compound.</li>
+  <li><strong>The strongest markets are quieter and wetter:</strong>
+      {% for m in most_water|slice:":3" %}{{ m.metro }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      lead on water headroom.</li>
+</ul>
+
+<h2 style="color:#0b3d5c;">National ranking</h2>
+<p style="color:#5b6b78;font-size:14px;">Suitability is a 0&ndash;100 composite (higher is better),
+   weighting power 40%, water 35%, and hazard 25%.</p>
+<table>
+  <thead>
+    <tr><th>#</th><th>Market</th><th>Suitability</th><th>Grade</th>
+        <th style="text-align:right;">Water</th><th style="text-align:right;">Power</th><th style="text-align:right;">Hazard</th></tr>
+  </thead>
+  <tbody>
+  {% for m in metros %}
+    <tr>
+      <td>{{ m.rank }}</td>
+      <td><a href="/siting/{{ m.slug }}/">{{ m.metro }}</a></td>
+      <td style="font-weight:700;color:{{ m.color }};">{{ m.suitability }}</td>
+      <td><span class="pill" style="background:{{ m.color }};">{{ m.grade }}</span></td>
+      <td style="text-align:right;">{{ m.water }}</td>
+      <td style="text-align:right;">{{ m.power }}</td>
+      <td style="text-align:right;">{{ m.hazard }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2 style="color:#0b3d5c;">The water story</h2>
+<p>Isolating water headroom &mdash; a market's capacity to supply a large new cooling
+   load without straining its basin &mdash; sharpens the concern. The markets absorbing
+   the most growth are, in several cases, the ones with the least room.</p>
+<table>
+  <thead><tr><th>Most water headroom</th><th style="text-align:right;">Score</th>
+             <th>Least water headroom</th><th style="text-align:right;">Score</th></tr></thead>
+  <tbody>
+  {% for p in water_pairs %}
+    <tr>
+      <td>{{ p.most.metro }}</td><td style="text-align:right;">{{ p.most.water }}</td>
+      <td>{{ p.least.metro }}</td><td style="text-align:right;">{{ p.least.water }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2 style="color:#0b3d5c;">Methodology</h2>
+<p style="font-size:14px;line-height:1.6;">Nemo's suitability score is a transparent composite of
+   three 0&ndash;100 favorability legs. <strong>Power availability</strong> reflects ISO/RTO
+   interconnection-queue backlog and time-to-energize (LBNL &amp; ISO annual data).
+   <strong>Water headroom</strong> is a structural basin-capacity baseline discounted by the
+   current U.S. Drought Monitor reading, refreshed live. <strong>Hazard safety</strong> is Nemo's
+   physical-hazard model; FEMA's National Risk Index rating is shown as authoritative context in
+   the detailed reports but is not used to compute the hazard leg (its composite is
+   expected-annual-loss weighted and scales with population, unsuited to siting a single asset).
+   Scores are relative rankings across candidate markets for shortlisting; confirm with
+   site-specific utility and water-rights diligence. This product uses FEMA's National Risk Index
+   but is not endorsed by FEMA.</p>
+
+<section class="signup" id="signup" style="margin-top:28px;">
+  <h2>Get the underlying data or a market deep-dive</h2>
+  <p>We publish this ranking for free. Want the county-level breakdown for a specific market,
+     or the raw dataset for your own analysis? Leave your email.</p>
+  {% if request.GET.subscribed %}<div class="ok">Thanks &mdash; we&rsquo;ll be in touch.</div>{% endif %}
+  <form class="form-row" method="post" action="/subscribe/">
+    {% csrf_token %}
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <button type="submit">Request the data</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

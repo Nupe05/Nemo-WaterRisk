@@ -60,6 +60,7 @@
         <th>County</th><th>Submarket</th>
         <th class="num">Suitability</th><th class="num">Power</th>
         <th class="num">Water</th><th class="num">Hazard</th><th>Key hazards</th>
+        <th>FEMA NRI</th>
       </tr>
       {% for c in counties %}
       <tr>
@@ -70,18 +71,22 @@
         <td class="num">{{ c.water }}</td>
         <td class="num">{{ c.hazard }}</td>
         <td style="color:var(--muted);">{{ c.top_hazards }}</td>
+        <td style="color:var(--muted);">{{ c.nri_rating }}</td>
       </tr>
       {% endfor %}
     </table>
 
     <div class="foot">
       Methodology: composite of power availability (ISO/RTO interconnection-queue backlog and
-      time-to-energize; LBNL &amp; ISO data), water headroom (USGS water/streamflow context and
-      U.S. Drought Monitor climatology), and physical-hazard safety (FEMA National Risk Index),
-      each 0&ndash;100 where higher is more favorable, weighted power {{ legs.0.weight }}% /
-      water {{ legs.1.weight }}% / hazard {{ legs.2.weight }}%. Scores are relative rankings across
-      candidate markets for shortlisting; confirm with site-specific utility and water-rights
-      diligence. Built from public data. &copy; Nemo Water Risk.
+      time-to-energize; LBNL &amp; ISO annual data), water headroom (structural basin capacity
+      discounted by the current U.S. Drought Monitor DSCI, refreshed live), and physical-hazard
+      safety (Nemo physical-hazard model), each 0&ndash;100 where higher is more favorable,
+      weighted power {{ legs.0.weight }}% / water {{ legs.1.weight }}% / hazard {{ legs.2.weight }}%.
+      The FEMA NRI column shows FEMA's authoritative composite rating for context; it is not used
+      to compute the hazard leg (the NRI composite is expected-annual-loss weighted and scales
+      with population, so it is unsuited to siting a single asset). Scores are relative rankings
+      for shortlisting; confirm with site-specific utility and water-rights diligence. This
+      product uses FEMA's National Risk Index but is not endorsed by FEMA. &copy; Nemo Water Risk.
     </div>
   </div>
 </body>

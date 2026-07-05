@@ -105,4 +105,7 @@ def power_availability(state_fips: str) -> dict | None:
         "years": prof["years"],
         "region": region,
         "note": prof["note"],
+        # Provenance: interconnection queues have no live API — this is a
+        # periodically-refreshed snapshot of the authoritative annual dataset.
+        "source": "LBNL 'Queued Up' (annual) + ISO/RTO queue reports",
     }
