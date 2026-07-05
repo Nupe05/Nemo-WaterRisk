@@ -71,8 +71,64 @@ def hazard_safety(county_fips: str) -> dict | None:
 
     Returns {'score': 0-100, 'top_hazards': [...]} where a HIGHER score means
     LOWER natural-hazard exposure, or None if the county is not in the table.
+
+    Note: this is our PHYSICAL-hazard signal (which hazards threaten a facility),
+    not FEMA's composite Risk Index. We deliberately do NOT drive this from the
+    NRI composite score, because that score is weighted by expected annual loss
+    and therefore scales with population/property value — big metros (Cook,
+    Santa Clara, Maricopa) pin near 100 "Very High" on exposure alone, which is
+    the wrong signal for siting a single asset. See fetch_nri_rating() for the
+    authoritative FEMA rating we surface as context alongside this score.
     """
     prof = HAZARDS.get((county_fips or "").strip())
     if not prof:
         return None
     return {"score": float(prof["safety"]), "top_hazards": list(prof["top_hazards"])}
+
+
+# --- Live FEMA National Risk Index (authoritative context, not a score driver) ---
+NRI_SERVICE = (
+    "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/"
+    "National_Risk_Index_Counties/FeatureServer/0/query"
+)
+
+
+def fetch_nri_rating(county_fips: str, *, timeout: int = 20) -> dict | None:
+    """Live composite FEMA National Risk Index rating for a county FIPS.
+
+    Returns {'risk_score': float, 'risk_rating': str} (e.g. "Relatively Low",
+    "Very High") from FEMA's public, tokenless feature service, or None on any
+    failure. We surface this as the authoritative FEMA label in reports; we do
+    NOT feed it into the siting hazard leg (see hazard_safety for why).
+
+    Data: FEMA National Risk Index (county), version 1.20 (Dec 2025). Not
+    endorsed by FEMA; FEMA cannot vouch for analyses derived after retrieval.
+    """
+    import requests
+
+    fips = (county_fips or "").strip()
+    if not fips:
+        return None
+    try:
+        resp = requests.get(
+            NRI_SERVICE,
+            params={
+                "where": f"STCOFIPS='{fips}'",
+                "outFields": "STCOFIPS,RISK_SCORE,RISK_RATNG",
+                "returnGeometry": "false",
+                "f": "json",
+            },
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        features = resp.json().get("features") or []
+        if not features:
+            return None
+        attrs = features[0].get("attributes", {})
+        rating = attrs.get("RISK_RATNG")
+        score = attrs.get("RISK_SCORE")
+        if rating is None and score is None:
+            return None
+        return {"risk_score": score, "risk_rating": rating}
+    except Exception:  # noqa: BLE001 - live context is best-effort; caller falls back
+        return None

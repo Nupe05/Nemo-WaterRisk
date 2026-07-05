@@ -186,6 +186,8 @@ def siting_report_context(metro_name: str) -> dict | None:
             "power": round(s.power),
             "hazard": round(s.hazard),
             "top_hazards": ", ".join(s.detail.get("top_hazards", []) or ["—"]),
+            "nri_rating": s.detail.get("nri_risk_rating") or "—",
+            "water_source": s.detail.get("water_source") or "structural",
         }
         for s in metro["counties"]
     ]
