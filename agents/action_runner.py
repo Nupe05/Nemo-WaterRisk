@@ -208,6 +208,34 @@ def _run_send_siting_report(payload: dict) -> dict:
     return {"ok": True, "to": to, "metro": metro}
 
 
+def _run_send_alert(payload: dict) -> dict:
+    """Email an approval-gated monitoring alert to a subscriber."""
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+    from django.template.loader import render_to_string
+
+    to = (payload or {}).get("to")
+    label = (payload or {}).get("target_label")
+    if not to or not label:
+        raise ActionError("send_alert_missing_to_or_target")
+
+    base = (getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
+    ctx = dict(payload)
+    ctx["detail_url"] = f"{base}{payload.get('detail_path', '')}" if base else payload.get("detail_path", "")
+    html = render_to_string("public/alert_email.html", ctx)
+
+    message = EmailMessage(
+        subject=f"Risk alert: {label} — {payload.get('from_band')} → {payload.get('to_band')}",
+        body=html,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[to],
+    )
+    message.content_subtype = "html"
+    message.send(fail_silently=False)
+    logger.info("send_alert sent to=%s target=%s", to, label)
+    return {"ok": True, "to": to, "target": label}
+
+
 _HANDLERS = {
     ApprovalItem.ActionType.WRITE_FILE: _run_write_file,
     ApprovalItem.ActionType.SEND_REPORT: _run_send_report,
@@ -216,6 +244,7 @@ _HANDLERS = {
     ApprovalItem.ActionType.POST_INSTAGRAM: _run_post_instagram,
     ApprovalItem.ActionType.EMAIL_REPLY: _run_email_reply,
     ApprovalItem.ActionType.SEND_SITING_REPORT: _run_send_siting_report,
+    ApprovalItem.ActionType.SEND_ALERT: _run_send_alert,
 }
 
 

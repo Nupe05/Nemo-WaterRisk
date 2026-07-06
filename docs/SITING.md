@@ -36,11 +36,34 @@ slow-moving structural factors (interconnection regime, basin yield, seismic
 exposure) — the same pattern as the census population table. They're grounded
 in the public sources above and documented inline in
 `integrations/grid.py`, `integrations/hazard.py`, and
-`integrations/siting_locations.py`. Each file notes its live-data upgrade path
-(pull the LBNL queue dataset, FEMA NRI API, and compute water headroom from the
-existing scoring engine per basin). Reports state plainly that scores are
+`integrations/siting_locations.py`. Reports state plainly that scores are
 *relative rankings for shortlisting*, to be confirmed with site-specific
 utility and water-rights diligence.
+
+### Live data & provenance (data hardening)
+
+Each leg records its data source in `SitingScore.detail`, and the scored value
+reflects live conditions where a live signal genuinely improves the answer:
+
+- **Water — live.** The structural basin baseline is discounted by the county's
+  *current* U.S. Drought Monitor DSCI (fetched live, tokenless), removing up to
+  `NEMO_WATER_DROUGHT_PENALTY` of headroom at maximum drought. Falls back to the
+  structural baseline if the feed is unavailable. Provenance:
+  `"structural + USDM drought (live)"` or `"structural"`.
+- **Hazard — structural, by design.** We fetch FEMA's National Risk Index rating
+  live and show it as authoritative *context* (the `FEMA NRI` column), but we do
+  **not** drive the hazard leg from the NRI composite. That composite is weighted
+  by expected annual loss and scales with population/property value, so large
+  metros (Cook, Santa Clara, Maricopa) pin near 100 "Very High" on exposure
+  alone — the wrong signal for siting a single asset. The hazard leg stays our
+  physical-hazard model (which hazards actually threaten a facility).
+- **Power — sourced snapshot.** Interconnection queues have no live API; the leg
+  is a periodically-refreshed snapshot of the authoritative annual dataset
+  (LBNL "Queued Up" + ISO reports), labelled as such.
+
+Toggle all live fetches with `NEMO_SITING_LIVE` (default on; set `0` for
+offline/testing). Attribution: this product uses FEMA's National Risk Index but
+is not endorsed by FEMA.
 
 ## Run it
 

@@ -46,4 +46,24 @@
     <button type="submit">Request the report</button>
   </form>
 </section>
+
+<section class="signup" id="monitor" style="margin-top:20px;">
+  <h2>Monitor {{ row.name }}</h2>
+  <p>Get an email the moment this site&rsquo;s water-supply risk crosses into a worse band &mdash;
+     before it becomes an outage or a board question. Pro alerts on smaller moves.</p>
+  {% if request.GET.monitoring %}
+    <div class="ok">You&rsquo;re monitoring {{ row.name }}. We&rsquo;ll alert you when its risk changes.</div>
+  {% endif %}
+  <form class="form-row" method="post" action="/monitor/subscribe/">
+    {% csrf_token %}
+    <input type="hidden" name="target_type" value="site">
+    <input type="hidden" name="target_ref" value="{{ row.reference }}">
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <select name="tier" style="padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;">
+      <option value="basic">Basic — band-change alerts</option>
+      <option value="pro">Pro — sensitive alerts</option>
+    </select>
+    <button type="submit">Monitor this site</button>
+  </form>
+</section>
 {% endblock %}

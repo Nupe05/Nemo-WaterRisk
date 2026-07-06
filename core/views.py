@@ -16,9 +16,18 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from django.utils.text import slugify
+
 from scoring.bands import band
 from scoring.model import WEIGHTS
-from .models import ApprovalItem, InboundEmail, Lead, MonitoredSite, WaterRiskScore
+from .models import (
+    ApprovalItem,
+    InboundEmail,
+    Lead,
+    MonitoredSite,
+    MonitorSubscription,
+    WaterRiskScore,
+)
 
 COMPONENT_LABELS = {
     "streamflow_deficit": "Streamflow deficit",
@@ -113,6 +122,43 @@ def _queue_report_request(lead: Lead, site_ref: str) -> None:
         summary=f"Send {site.name} water-risk report to {lead.email}",
         payload={"to": lead.email, "site": site.reference, "lead_id": lead.id},
     )
+
+
+# --- Monitoring subscription (recurring-revenue signup) ---------------------
+@require_POST
+def monitor_subscribe(request):
+    """Subscribe an email to alerts for a water site or a siting metro.
+
+    Works from both product surfaces via hidden fields:
+      target_type = 'site' | 'metro',  target_ref = site reference | metro name.
+    Idempotent per (email, target, type) thanks to the DB unique constraint.
+    """
+    email = (request.POST.get("email") or "").strip()
+    target_type = (request.POST.get("target_type") or "").strip()
+    target_ref = (request.POST.get("target_ref") or "").strip()
+    tier = (request.POST.get("tier") or "basic").strip()
+
+    valid_types = {t for t, _ in MonitorSubscription.TargetType.choices}
+    valid_tiers = {t for t, _ in MonitorSubscription.Tier.choices}
+    if "@" in email and "." in email and target_type in valid_types and target_ref:
+        MonitorSubscription.objects.get_or_create(
+            email=email,
+            target_type=target_type,
+            target_ref=target_ref,
+            defaults={
+                "tier": tier if tier in valid_tiers else "basic",
+                "source": "monitor_signup",
+            },
+        )
+        Lead.objects.get_or_create(
+            email=email, source="monitor_signup", defaults={"site_ref": target_ref}
+        )
+
+    if target_type == "metro":
+        dest = f"/siting/{slugify(target_ref)}/"
+    else:
+        dest = f"/site/{target_ref}/"
+    return redirect(f"{dest}?monitoring=1")
 
 
 # --- Premium report (staff-only, the sellable deliverable) ------------------

@@ -175,6 +175,7 @@ class ApprovalItem(models.Model):
         POST_INSTAGRAM = "post_instagram", "Post Instagram"
         EMAIL_REPLY = "email_reply", "Email reply to an inbound message"
         SEND_SITING_REPORT = "send_siting_report", "Email site-selection report"
+        SEND_ALERT = "send_alert", "Email a monitoring alert"
 
     task = models.ForeignKey(
         AgentTask, null=True, blank=True, on_delete=models.SET_NULL, related_name="approvals"
@@ -328,3 +329,96 @@ class SitingScore(models.Model):
 
     def __str__(self):
         return f"SitingScore<{self.location.county_name}={self.suitability}>"
+
+
+class SitingChange(models.Model):
+    """A flagged material change in a metro's siting suitability.
+
+    The siting analogue of RiskChange: emitted by the SitingAgent when a
+    metro's rolled-up suitability moves by more than the configured threshold
+    between runs. Consumed by the monitoring/alert path.
+    """
+
+    metro = models.CharField(max_length=128, db_index=True)
+    previous_score = models.FloatField(null=True, blank=True)
+    new_score = models.FloatField()
+    magnitude = models.FloatField(help_text="abs(new - previous)")
+    detected_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-detected_at"]
+
+    def __str__(self):
+        return f"SitingChange<{self.metro}: {self.previous_score}->{self.new_score}>"
+
+
+# ---------------------------------------------------------------------------
+# Monitoring & alerts — the recurring-revenue product
+# ---------------------------------------------------------------------------
+class MonitorSubscription(models.Model):
+    """A customer's standing subscription to be alerted when a target's risk
+    changes. Targets are either a water-index site or a siting metro. This is
+    the recurring-revenue primitive: one signup, ongoing alerts.
+
+    `last_alerted_*` capture the state we last notified on, so the sweep never
+    double-alerts the same condition. Billing lives in a later brick; `tier`
+    already models the paid levels so the alert logic can honor them now.
+    """
+
+    class TargetType(models.TextChoices):
+        SITE = "site", "Water-risk site"
+        METRO = "metro", "Siting metro"
+
+    class Tier(models.TextChoices):
+        BASIC = "basic", "Basic"
+        PRO = "pro", "Pro"
+
+    email = models.EmailField(db_index=True)
+    target_type = models.CharField(max_length=8, choices=TargetType.choices)
+    target_ref = models.CharField(max_length=128, help_text="Site reference or metro name.")
+    tier = models.CharField(max_length=8, choices=Tier.choices, default=Tier.BASIC)
+    active = models.BooleanField(default=True, db_index=True)
+    source = models.CharField(max_length=64, default="monitor_signup")
+    last_alerted_score = models.FloatField(null=True, blank=True)
+    last_alerted_band = models.CharField(max_length=24, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "target_type", "target_ref"],
+                name="uniq_subscription_per_target",
+            )
+        ]
+
+    def __str__(self):
+        return f"Monitor<{self.email}:{self.target_type}:{self.target_ref}>"
+
+
+class AlertEvent(models.Model):
+    """Audit trail of a fired monitoring alert (one per material adverse move).
+
+    Records the transition and links the approval-gated email, so we have a
+    full history and never re-alert an already-notified condition.
+    """
+
+    subscription = models.ForeignKey(
+        MonitorSubscription, on_delete=models.CASCADE, related_name="alerts"
+    )
+    target_type = models.CharField(max_length=8)
+    target_ref = models.CharField(max_length=128)
+    from_score = models.FloatField(null=True, blank=True)
+    to_score = models.FloatField()
+    from_band = models.CharField(max_length=24, blank=True, default="")
+    to_band = models.CharField(max_length=24, blank=True, default="")
+    approval = models.ForeignKey(
+        "ApprovalItem", null=True, blank=True, on_delete=models.SET_NULL, related_name="alert_events"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"AlertEvent<{self.target_ref}: {self.from_band}->{self.to_band}>"

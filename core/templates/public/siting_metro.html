@@ -44,4 +44,24 @@
     <button type="submit">Send me the {{ m.metro }} report</button>
   </form>
 </section>
+
+<section class="signup" id="monitor" style="margin-top:20px;">
+  <h2>Monitor {{ m.metro }}</h2>
+  <p>Markets shift as power queues, drought, and hazard data change. Get an email when
+     {{ m.metro }}&rsquo;s siting suitability drops into a worse grade.</p>
+  {% if request.GET.monitoring %}
+    <div class="ok">You&rsquo;re monitoring {{ m.metro }}. We&rsquo;ll alert you when its suitability changes.</div>
+  {% endif %}
+  <form class="form-row" method="post" action="/monitor/subscribe/">
+    {% csrf_token %}
+    <input type="hidden" name="target_type" value="metro">
+    <input type="hidden" name="target_ref" value="{{ m.metro }}">
+    <input type="email" name="email" placeholder="you@company.com" required>
+    <select name="tier" style="padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;">
+      <option value="basic">Basic — grade-change alerts</option>
+      <option value="pro">Pro — sensitive alerts</option>
+    </select>
+    <button type="submit">Monitor this market</button>
+  </form>
+</section>
 {% endblock %}

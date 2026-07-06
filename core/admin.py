@@ -110,3 +110,26 @@ class SitingScoreAdmin(admin.ModelAdmin):
     list_filter = ("grade",)
     search_fields = ("location__county_name", "location__metro")
     date_hierarchy = "computed_at"
+
+
+@admin.register(models.SitingChange)
+class SitingChangeAdmin(admin.ModelAdmin):
+    list_display = ("metro", "previous_score", "new_score", "magnitude", "detected_at")
+    search_fields = ("metro",)
+    date_hierarchy = "detected_at"
+
+
+@admin.register(models.MonitorSubscription)
+class MonitorSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("email", "target_type", "target_ref", "tier", "active", "last_alerted_band", "created_at")
+    list_filter = ("target_type", "tier", "active")
+    search_fields = ("email", "target_ref")
+    date_hierarchy = "created_at"
+
+
+@admin.register(models.AlertEvent)
+class AlertEventAdmin(admin.ModelAdmin):
+    list_display = ("target_ref", "target_type", "from_band", "to_band", "from_score", "to_score", "created_at")
+    list_filter = ("target_type",)
+    search_fields = ("target_ref",)
+    date_hierarchy = "created_at"
