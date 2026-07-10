@@ -78,6 +78,30 @@ LOCATIONS: list[Location] = [
     Location("31055", "Douglas County", "31", "Omaha, NE", "emerging", 75),
     # --- Quincy, WA — Columbia River + hydro: why it became a DC hub ---
     Location("53025", "Grant County", "53", "Quincy, WA", "established", 88),
+
+    # === Expansion: the current mega-build markets and emerging hubs ===
+    # --- Abilene, TX — the Stargate/OpenAI campus; arid West Texas ---
+    Location("48441", "Taylor County", "48", "Abilene, TX", "emerging", 30),
+    # --- Memphis, TN — xAI Colossus; Memphis Sand aquifer (abundant but contested) ---
+    Location("47157", "Shelby County", "47", "Memphis, TN", "emerging", 60),
+    # --- Northeast Louisiana — Meta's ~$10B campus; humid, ample supply ---
+    Location("22083", "Richland Parish", "22", "Richland Parish, LA", "emerging", 78),
+    # --- Los Lunas, NM — Meta campus; arid, Rio Grande stress ---
+    Location("35061", "Valencia County", "35", "Los Lunas, NM", "emerging", 30),
+    # --- Las Vegas, NV — arid, Colorado River / Lake Mead shortage ---
+    Location("32003", "Clark County", "32", "Las Vegas, NV", "established", 25),
+    # --- Austin, TX — ERCOT; Highland Lakes, periodic drought ---
+    Location("48453", "Travis County", "48", "Austin, TX", "established", 50),
+    # --- Council Bluffs, IA — Google/Meta; Missouri River ---
+    Location("19155", "Pottawattamie County", "19", "Council Bluffs, IA", "established", 76),
+    # --- Nashville, TN — TVA; Cumberland River, humid ---
+    Location("47037", "Davidson County", "47", "Nashville, TN", "emerging", 72),
+    # --- Mount Pleasant, WI — Microsoft; Lake Michigan abundance ---
+    Location("55101", "Racine County", "55", "Mount Pleasant, WI", "emerging", 84),
+    # --- Denver, CO — semi-arid, South Platte / Colorado water stress ---
+    Location("08001", "Adams County", "08", "Denver, CO", "established", 40),
+    # --- Umatilla, OR — Amazon (Boardman); Columbia River ---
+    Location("41059", "Umatilla County", "41", "Umatilla, OR", "established", 82),
 ]
 
 

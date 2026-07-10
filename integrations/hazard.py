@@ -63,6 +63,18 @@ HAZARDS: dict[str, dict] = {
     "31055": {"safety": 60, "top_hazards": ["tornado", "riverine flooding"]},# Douglas, NE
     # --- Quincy, WA — very low hazard, abundant hydro ---
     "53025": {"safety": 78, "top_hazards": ["wildfire"]},                    # Grant, WA
+    # === Expansion markets ===
+    "48441": {"safety": 55, "top_hazards": ["tornado", "hail", "heat wave"]},     # Taylor, TX (Abilene)
+    "47157": {"safety": 52, "top_hazards": ["earthquake", "riverine flooding", "tornado"]},  # Shelby, TN (New Madrid)
+    "22083": {"safety": 50, "top_hazards": ["riverine flooding", "hurricane", "heat wave"]},  # Richland Parish, LA
+    "35061": {"safety": 66, "top_hazards": ["riverine flooding", "wildfire"]},    # Valencia, NM
+    "32003": {"safety": 58, "top_hazards": ["heat wave", "riverine flooding"]},   # Clark, NV (Las Vegas)
+    "48453": {"safety": 55, "top_hazards": ["riverine flooding", "heat wave"]},   # Travis, TX (flash-flood alley)
+    "19155": {"safety": 60, "top_hazards": ["riverine flooding", "tornado"]},     # Pottawattamie, IA
+    "47037": {"safety": 57, "top_hazards": ["tornado", "riverine flooding"]},     # Davidson, TN (Nashville)
+    "55101": {"safety": 72, "top_hazards": ["winter weather"]},                   # Racine, WI
+    "08001": {"safety": 64, "top_hazards": ["hail", "riverine flooding"]},        # Adams, CO (Denver)
+    "41059": {"safety": 70, "top_hazards": ["wildfire"]},                         # Umatilla, OR
 }
 
 

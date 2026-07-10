@@ -62,6 +62,10 @@ REGIONS: dict[str, dict] = {
         "score": 42, "years": "4-7",
         "note": "The hottest data-center market is also the most backlogged: queue reform, capacity-price spikes, multi-year waits.",
     },
+    "TVA": {
+        "score": 64, "years": "3-4",
+        "note": "The Tennessee Valley Authority is aggressively courting large loads (Google, xAI); vertically integrated and fast-moving, but load growth is steep.",
+    },
 }
 
 # State FIPS (2-digit) -> ISO/RTO region the state's data-center markets sit in.
@@ -79,8 +83,13 @@ STATE_TO_REGION: dict[str, str] = {
     "41": "NORTHWEST",   # Oregon (Hillsboro) - PacifiCorp/BPA
     "53": "NORTHWEST",   # Washington (Quincy) - BPA hydro
     "06": "CAISO",       # California (Santa Clara / Bay Area) - CAISO
-    "19": "MISO",        # Iowa (Des Moines) - MISO
+    "19": "MISO",        # Iowa (Des Moines / Council Bluffs) - MISO
     "31": "SPP",         # Nebraska (Omaha) - SPP
+    "47": "TVA",         # Tennessee (Memphis / Nashville) - TVA
+    "22": "MISO",        # Louisiana (Meta / Entergy) - MISO South
+    "35": "WECC_SW",     # New Mexico (Los Lunas / Meta) - PNM (WECC)
+    "55": "MISO",        # Wisconsin (Mount Pleasant / Microsoft) - MISO
+    "08": "WECC_SW",     # Colorado (Denver) - Xcel/PSCo (WECC)
 }
 
 
