@@ -236,6 +236,37 @@ class Lead(models.Model):
         return f"Lead<{self.email}>"
 
 
+class ReadRequest(models.Model):
+    """An inbound request for a free independent site read (the pilot funnel).
+
+    Richer than a Lead: captures who they are and the specific site/market they
+    are weighing, so a diligence report can be turned around fast. Purely inbound
+    data — no approval gate (no external action is taken on capture). A best-effort
+    internal notification email is sent to LEAD_NOTIFY_EMAIL when configured.
+    """
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        CONTACTED = "contacted", "Contacted"
+        DELIVERED = "delivered", "Report delivered"
+        CLOSED = "closed", "Closed"
+
+    name = models.CharField(max_length=120, blank=True, default="")
+    email = models.EmailField(db_index=True)
+    company = models.CharField(max_length=160, blank=True, default="")
+    market = models.CharField(max_length=160, blank=True, default="")
+    note = models.TextField(blank=True, default="")
+    source = models.CharField(max_length=64, default="report_request")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.NEW)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ReadRequest<{self.email}: {self.market or '—'}>"
+
+
 class InboundEmail(models.Model):
     """An email received via the SendGrid Inbound Parse webhook.
 

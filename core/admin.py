@@ -3,10 +3,27 @@
 The ApprovalItem admin is where you spend 15-20 minutes each morning:
 approve / edit / reject what the agents drafted overnight.
 """
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
 from django.utils import timezone
 
 from . import models
+
+
+@admin.action(description="Export selected to CSV")
+def export_as_csv(modeladmin, request, queryset):
+    """Reusable admin action: export a model's list_display fields to CSV."""
+    fields = list(modeladmin.list_display)
+    meta = modeladmin.model._meta
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={meta.model_name}.csv"
+    writer = csv.writer(response)
+    writer.writerow(fields)
+    for obj in queryset:
+        writer.writerow([getattr(obj, f, "") for f in fields])
+    return response
 
 
 @admin.register(models.Watershed)
@@ -81,6 +98,17 @@ class LeadAdmin(admin.ModelAdmin):
     list_filter = ("source",)
     search_fields = ("email", "site_ref")
     date_hierarchy = "created_at"
+    actions = (export_as_csv,)
+
+
+@admin.register(models.ReadRequest)
+class ReadRequestAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "name", "email", "company", "market", "status")
+    list_filter = ("status", "source")
+    list_editable = ("status",)
+    search_fields = ("name", "email", "company", "market", "note")
+    date_hierarchy = "created_at"
+    actions = (export_as_csv,)
 
 
 @admin.register(models.InboundEmail)

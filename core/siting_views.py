@@ -18,7 +18,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from scoring.siting import grade_for
-from .models import ApprovalItem, Lead, SitingScore
+from .models import ApprovalItem, Lead, ReadRequest, SitingScore
 
 LEG_LABELS = {
     "water": "Water headroom",
@@ -282,6 +282,72 @@ def state_of_report(request):
         except Exception:  # noqa: BLE001 - fall back to printable HTML
             pass
     return render(request, "public/report_index.html", ctx)
+
+
+def _valid_email(addr: str) -> bool:
+    return "@" in addr and "." in addr.split("@")[-1]
+
+
+def _notify(subject: str, body: str) -> None:
+    """Best-effort internal heads-up to the founder. No-op unless LEAD_NOTIFY_EMAIL
+    is set. Never raises — capture must succeed even if mail is down."""
+    import os
+
+    to = (os.getenv("LEAD_NOTIFY_EMAIL") or "").strip()
+    if not to:
+        return
+    try:
+        from django.conf import settings
+        from django.core.mail import EmailMessage
+
+        EmailMessage(
+            subject=subject[:200],
+            body=body,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            to=[to],
+        ).send(fail_silently=True)
+    except Exception:  # noqa: BLE001 - notification is best-effort
+        pass
+
+
+@require_POST
+def newsletter_subscribe(request):
+    """Capture an email for the Water Risk Monitor (the owned audience list).
+
+    Pure inbound signal — stored as a Lead with source='newsletter'. Idempotent
+    per email+source. Returns to the report page with a success flag."""
+    email = (request.POST.get("email") or "").strip()
+    if _valid_email(email):
+        _, created = Lead.objects.get_or_create(email=email, source="newsletter")
+        if created:
+            _notify("New Water Risk Monitor subscriber", f"{email} subscribed to the Monitor.")
+    return redirect("/report/?subscribed=1#subscribe")
+
+
+@require_POST
+def request_read(request):
+    """Capture a free-pilot site-read request (the sales funnel).
+
+    Stores a ReadRequest and drops a best-effort internal notification. No
+    approval gate: nothing is sent to anyone but the founder, and only if
+    LEAD_NOTIFY_EMAIL is configured."""
+    email = (request.POST.get("email") or "").strip()
+    if _valid_email(email):
+        rr = ReadRequest.objects.create(
+            name=(request.POST.get("name") or "").strip()[:120],
+            email=email,
+            company=(request.POST.get("company") or "").strip()[:160],
+            market=(request.POST.get("market") or "").strip()[:160],
+            note=(request.POST.get("note") or "").strip()[:2000],
+            source="report_request",
+        )
+        _notify(
+            "New free-read request",
+            f"{rr.name or '(no name)'} <{rr.email}>\n"
+            f"Company: {rr.company or '—'}\nMarket/site: {rr.market or '—'}\n"
+            f"Note: {rr.note or '—'}",
+        )
+    return redirect("/report/?requested=1#request")
 
 
 def report_data(request):

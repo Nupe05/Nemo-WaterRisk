@@ -95,15 +95,36 @@
    site-specific utility and water-rights diligence. This product uses FEMA's National Risk Index
    but is not endorsed by FEMA.</p>
 
-<section class="signup" id="signup" style="margin-top:28px;">
-  <h2>Get the underlying data or a market deep-dive</h2>
-  <p>We publish this ranking for free. Want the county-level breakdown for a specific market,
-     or the raw dataset for your own analysis? Leave your email.</p>
-  {% if request.GET.subscribed %}<div class="ok">Thanks &mdash; we&rsquo;ll be in touch.</div>{% endif %}
-  <form class="form-row" method="post" action="/subscribe/">
+<section class="signup" id="subscribe" style="margin-top:28px;">
+  <h2>The Water Risk Monitor</h2>
+  <p>We publish this index for free and refresh it as conditions change. Get the monthly
+     Monitor &mdash; the updated ranking, the biggest moves, and what they mean for siting.</p>
+  {% if request.GET.subscribed %}<div class="ok">You&rsquo;re on the list &mdash; thanks for subscribing.</div>{% endif %}
+  <form class="form-row" method="post" action="/report/subscribe/">
     {% csrf_token %}
     <input type="email" name="email" placeholder="you@company.com" required>
-    <button type="submit">Request the data</button>
+    <button type="submit">Subscribe</button>
+  </form>
+  <p class="muted-note">No spam. The index, updated. Unsubscribe anytime.</p>
+</section>
+
+<section class="signup" id="request">
+  <h2>Request a free independent read</h2>
+  <p>Weighing a specific site or market? We&rsquo;ll run an independent water + power + hazard
+     read on it &mdash; the same scorecard behind this index &mdash; and send it back to you.
+     No cost; we&rsquo;re taking a limited number in exchange for feedback.</p>
+  {% if request.GET.requested %}<div class="ok">Got it &mdash; we&rsquo;ll be in touch shortly with your read.</div>{% endif %}
+  <form method="post" action="/report/request/">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="field"><label>Name</label><input type="text" name="name" placeholder="Your name"></div>
+      <div class="field"><label>Work email</label><input type="email" name="email" placeholder="you@company.com" required></div>
+      <div class="field"><label>Company</label><input type="text" name="company" placeholder="Company"></div>
+      <div class="field"><label>Site or market</label><input type="text" name="market" placeholder="County/metro you're evaluating"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Anything else? (optional)</label>
+      <textarea name="note" rows="2" placeholder="Timeline, load size, what you're deciding..."></textarea></div>
+    <div style="margin-top:12px;"><button type="submit">Request my free read</button></div>
   </form>
 </section>
 {% endif %}

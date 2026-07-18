@@ -11,6 +11,9 @@ urlpatterns = [
     # Public, citable home of the State of Data-Center Water Risk report.
     path("report/", siting_views.state_of_report, name="state-report"),
     path("report/data/", siting_views.report_data, name="report-data"),
+    # Audience + pilot capture on the report page (owned-list + sales funnel).
+    path("report/subscribe/", siting_views.newsletter_subscribe, name="report-subscribe"),
+    path("report/request/", siting_views.request_read, name="report-request"),
     path("report/<str:site_ref>/", views.site_report, name="site-report"),
     path("subscribe/", views.subscribe, name="subscribe"),
     # Monitoring signup (recurring alerts for a site or metro).
