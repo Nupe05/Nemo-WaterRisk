@@ -277,7 +277,7 @@ def state_of_report(request):
             html = render_to_string("public/report_index.html", ctx, request=request)
             pdf = HTML(string=html).write_pdf()
             resp = HttpResponse(pdf, content_type="application/pdf")
-            resp["Content-Disposition"] = 'inline; filename="state-of-data-center-water-risk.pdf"'
+            resp["Content-Disposition"] = 'attachment; filename="state-of-data-center-water-risk.pdf"'
             return resp
         except Exception:  # noqa: BLE001 - fall back to printable HTML
             pass
