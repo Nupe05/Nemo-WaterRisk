@@ -280,7 +280,9 @@ def state_of_report(request):
             resp["Content-Disposition"] = 'attachment; filename="state-of-data-center-water-risk.pdf"'
             return resp
         except Exception:  # noqa: BLE001 - fall back to printable HTML
-            pass
+            import logging
+
+            logging.getLogger("nemo.web").exception("weasyprint_pdf_failed")
     return render(request, "public/report_index.html", ctx)
 
 
