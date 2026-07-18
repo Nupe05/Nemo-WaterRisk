@@ -17,6 +17,9 @@ pandas==2.2.2
 
 # --- Reporting ---
 weasyprint==62.1             # HTML -> PDF
+pydyf==0.10.0                # WeasyPrint's PDF writer; 62.1 needs the 0.10.x API
+                             # (unpinned, pip pulled 0.11+ whose transform() API
+                             #  broke write_pdf with: 'super' object has no attribute 'transform')
 jinja2==3.1.4
 
 # --- Data visualization (VisualAgent) ---
